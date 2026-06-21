@@ -5,7 +5,7 @@ from .models import User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     ordering = ['email']
-    list_display = ['user_id','email', 'first_name', 'last_name', 'role', 'is_email_verified', 'is_staff', 'is_superuser']
+    list_display = ['email', 'first_name', 'last_name', 'role', 'is_email_verified', 'is_staff', 'is_superuser']
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'phone', 'avatar_url', 'role')}),
