@@ -1,4 +1,3 @@
-import uuid
 from django.db import models
 
 # defining enums for few fields
@@ -36,7 +35,6 @@ class Regulation(models.Model):
     wide_value = models.SmallIntegerField(default=1)
     noball_free_hit_enabled = models.BooleanField(default=True)
     noball_value = models.SmallIntegerField(default=1)
-    overthrow_runs_enabled = models.BooleanField(default=True)
     powerplay_config = models.JSONField(default=dict)
     drs_per_innings = models.SmallIntegerField(default=2)
     timed_out_limit = models.SmallIntegerField(default=180) # seconds

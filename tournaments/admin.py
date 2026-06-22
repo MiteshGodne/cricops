@@ -1,5 +1,5 @@
 from django.contrib import admin
-from tournaments.models import Regulation
+from tournaments.models.regulations import Regulation
 @admin.register(Regulation)
 
 class RegulationAdmin(admin.ModelAdmin):
