@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Regulation, Tournament, TournamentOrganizer
+from .models import Regulation, Tournament, TournamentOrganizer, Application, TournamentStanding
 
 @admin.register(Regulation)
 class RegulationAdmin(admin.ModelAdmin):
@@ -18,5 +18,17 @@ class TournamentOrganizerAdmin(admin.ModelAdmin):
     list_display = ['tournament', 'user', 'institution_name', 'institution_type', 'is_primary']
     list_filter = ['institution_type', 'is_primary']
     search_fields = ['institution_name', 'user__email']
-    
 #For memory -> user__email means search for an organizer in user model's email field. 
+
+@admin.register(Application)
+class ApplicationAdmin(admin.ModelAdmin):
+    list_display = ['team', 'tournament', 'status', 'created_at']
+    list_filter = ['status']
+    search_fields = ['team__team_name', 'tournament__name']
+    
+    
+@admin.register(TournamentStanding)
+class TournamentStandingAdmin(admin.ModelAdmin):
+    list_display = ['tournament', 'team', 'points', 'matches_played', 'net_run_rate']
+    list_filter = ['tournament']
+    search_fields = ['team__team_name']
