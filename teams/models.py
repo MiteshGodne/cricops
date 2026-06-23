@@ -4,7 +4,7 @@ from django.db import models
 class Team(models.Model):
     team_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    team_head = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='headed_teams')
+    team_head = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='teams_headed')
     created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_teams')
     
     team_name = models.CharField(max_length=255, unique=True)
