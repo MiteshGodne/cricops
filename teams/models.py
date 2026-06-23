@@ -29,3 +29,35 @@ class Team(models.Model):
 
     def __str__(self):
         return f"{self.team_name} ({self.short_name})"
+    
+
+class SquadRole(models.TextChoices):
+    PLAYER = 'PLAYER', 'Player'
+    CAPTAIN = 'CAPTAIN', 'Captain'
+    VICE_CAPTAIN = 'VICE_CAPTAIN', 'Vice Captain'
+
+class TournamentSquad(models.Model):
+    squad_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    application = models.ForeignKey('tournaments.Application', on_delete=models.CASCADE, related_name='squad_entries')
+    tournament = models.ForeignKey('tournaments.Tournament', on_delete=models.CASCADE, related_name='squad_entries')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE, related_name='tournament_squads')
+    player = models.ForeignKey('players.Player', on_delete=models.CASCADE, related_name='squad_entries')
+    jersey_number = models.PositiveSmallIntegerField()
+    squad_role = models.CharField(max_length=20, choices=SquadRole.choices, default=SquadRole.PLAYER)
+    is_wicketkeeper = models.BooleanField(default=False)
+    is_playing_xi = models.BooleanField(default=True)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tournament_squads'
+        ordering = ['team', 'jersey_number']
+        indexes = [
+            models.Index(fields=['tournament', 'team']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tournament', 'player'], name='unique_player_per_tournament'),
+            models.UniqueConstraint(fields=['tournament', 'team', 'jersey_number'], name='unique_jersey_per_team_per_tournament'),
+        ]
+
+    def __str__(self):
+        return f"{self.player.full_name} — {self.team.short_name} ({self.tournament})"
