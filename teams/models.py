@@ -7,8 +7,8 @@ class Team(models.Model):
     team_head = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='teams_headed')
     created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_teams')
     
-    team_name = models.CharField(max_length=255, unique=True)
-    short_name = models.CharField(max_length=10, unique=True) 
+    team_name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=10) 
     logo = models.ImageField(upload_to='team_logos/', blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
