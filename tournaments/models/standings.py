@@ -5,6 +5,7 @@ class TournamentStanding(models.Model):
     standing_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tournament = models.ForeignKey('tournaments.Tournament', on_delete=models.CASCADE, related_name='standings')
     team = models.ForeignKey('teams.Team', on_delete=models.CASCADE, related_name='tournament_standings')
+    group = models.ForeignKey('tournaments.Group', null=True, blank=True, on_delete=models.SET_NULL, related_name='standings')
     matches_played = models.SmallIntegerField(default=0)
     matches_won = models.SmallIntegerField(default=0)
     matches_lost = models.SmallIntegerField(default=0)

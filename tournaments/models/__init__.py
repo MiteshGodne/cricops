@@ -1,4 +1,4 @@
 from .regulations import Regulation, MatchFormat, TournamentFormat, TiebreakerMethod
-from .tournaments import Tournament, TournamentOrganizer, TournamentStatus, TournamentCategory
+from .tournaments import Tournament, TournamentOrganizer, TournamentStatus, TournamentCategory, Group
 from .applications import Application,  ApplicationStatus
 from .standings import TournamentStanding

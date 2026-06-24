@@ -8,6 +8,7 @@ class Innings(models.Model):
     fielding_team = models.ForeignKey('teams.Team', on_delete=models.PROTECT, related_name='innings_fielded')
     innings_number = models.SmallIntegerField()
     overs_completed = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)
+    is_super_over = models.BooleanField(default=False)
     total_score = models.SmallIntegerField(default=0)
     total_sixes = models.SmallIntegerField(default=0)
     total_fours = models.SmallIntegerField(default=0)

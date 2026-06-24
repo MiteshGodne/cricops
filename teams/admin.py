@@ -8,9 +8,11 @@ class TeamAdmin(admin.ModelAdmin):
     search_fields = ['team_name', 'short_name', 'team_head__email']
     ordering = ['-created_at']
     readonly_fields = ['team_id', 'created_at', 'updated_at']
+    list_select_related = ['team_head', 'created_by']
 
 @admin.register(TournamentSquad)
 class TournamentSquadAdmin(admin.ModelAdmin):
     list_display = ['player', 'team', 'tournament', 'jersey_number', 'squad_role', 'is_wicketkeeper', 'is_playing_xi']
     list_filter = ['squad_role', 'is_wicketkeeper', 'is_playing_xi']
-    search_fields = ['player__full_name', 'team__team_name']
+    search_fields = ['player__full_name', 'team__team_name', 'tournament__name']
+    list_select_related = ['player', 'team', 'tournament']

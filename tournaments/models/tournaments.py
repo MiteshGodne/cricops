@@ -103,3 +103,16 @@ class TournamentOrganizer(models.Model):
 
     def __str__(self):
         return f"{self.user.email} — {self.tournament.name}"
+
+
+class Group(models.Model):
+    group_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tournament = models.ForeignKey('tournaments.Tournament', on_delete=models.CASCADE, related_name='groups')
+    name = models.CharField(max_length=50)  # such as -> Group A
+
+    class Meta:
+        db_table = 'groups'
+        constraints = [models.UniqueConstraint(fields=['tournament', 'name'], name='unique_group_name_per_tournament')]
+
+    def __str__(self):
+        return f"{self.name} — {self.tournament.name}"

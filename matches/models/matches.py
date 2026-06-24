@@ -18,7 +18,8 @@ class Match(models.Model):
     tournament = models.ForeignKey('tournaments.Tournament', on_delete=models.CASCADE, related_name='matches')
     venue = models.ForeignKey('venues.Venue', on_delete=models.SET_NULL, null=True, related_name='matches')
     winner_team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='matches_won')
-    runner_up = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True,related_name='tournaments_runner_up')    
+    runnerup_team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True,related_name='tournaments_runner_up')    
+    group = models.ForeignKey('tournaments.Group', null=True, blank=True, on_delete=models.SET_NULL, related_name='matches')
     primary_umpire = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='umpired_matches')
     round_type = models.CharField(max_length=20, choices=RoundType.choices, default=RoundType.LEAGUE)
     round_number = models.SmallIntegerField(default=1) 
@@ -69,3 +70,32 @@ class TeamMatch(models.Model):
         ]
     def __str__(self):
         return f"{self.team.short_name} ({self.side}) — Match {self.match_id}"
+    
+    
+class MatchLiveState(models.Model):
+    match = models.OneToOneField(
+        'matches.Match', 
+        on_delete=models.CASCADE, 
+        related_name='live_state'
+    )
+    current_innings = models.ForeignKey(
+        'matches.Innings', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True
+    )
+    current_striker = models.ForeignKey('teams.TournamentSquad', on_delete=models.SET_NULL, null=True, related_name='live_striking')
+    current_non_striker = models.ForeignKey('teams.TournamentSquad', on_delete=models.SET_NULL, null=True, related_name='live_non_striking')
+    current_bowler = models.ForeignKey('teams.TournamentSquad', on_delete=models.SET_NULL, null=True, related_name='live_bowling')
+    target_runs = models.PositiveIntegerField(default=0)  
+    balls_remaining = models.PositiveIntegerField(default=120)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'match_live_states'
+        verbose_name = "Match Live State"
+        verbose_name_plural = "Match Live States"
+        
+    def __str__(self):
+        innings_status = f"Innings {self.current_innings.innings_number}" if self.current_innings else "Setup"
+        return f"Live State: {self.match} ({innings_status})"
