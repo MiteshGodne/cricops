@@ -1,5 +1,7 @@
 from django.db import models
 import uuid
+from django.db.models import Q
+from django.db.models.functions import Coalesce
 
 class ExtraType(models.TextChoices):
     WIDE = 'WIDE', 'Wide'
@@ -25,11 +27,24 @@ class Delivery(models.Model):
     over_number = models.SmallIntegerField()
     ball_number = models.SmallIntegerField()
     runs_scored = models.SmallIntegerField(default=0)
-    extra_runs = models.SmallIntegerField(default=0)
     extra_type = models.CharField(max_length=10, choices=ExtraType.choices, default=ExtraType.NONE)
-    is_legal_delivery = models.BooleanField(default=True)
-    is_wicket = models.BooleanField(default=False)
+    is_legal_delivery = models.GeneratedField(
+        expression= models.Case(
+            models.When(extra_type__in=['WIDE', 'NO_BALL'], then=models.Value(False)),
+            default=models.Value(True),
+        ),
+        output_field=models.BooleanField(),
+        db_persist=True
+    )
     wicket_type = models.CharField(max_length=20, choices=WicketType.choices, default=WicketType.NONE)
+    is_wicket = models.GeneratedField(
+        expression= models.Case(
+            models.When(wicket_type='NONE', then=models.Value(False)),
+            default=models.Value(True),
+        ),
+        output_field=models.BooleanField(),
+        db_persist=True
+    )
 
     class Meta:
         db_table = 'deliveries'
@@ -64,7 +79,6 @@ class PlayerDelivery(models.Model):
         db_table = 'player_deliveries'
         verbose_name = "Player delivery"
         verbose_name_plural = "Player deliveries"
-        
         constraints = [
             models.UniqueConstraint(fields=['delivery', 'player', 'performance_role'], name='unique_player_role_per_delivery'),
         ]

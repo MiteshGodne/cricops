@@ -41,7 +41,7 @@ class PlayerDeliveryAdmin(admin.ModelAdmin):
     
 @admin.register(MatchLiveState)
 class MatchLiveStateAdmin(admin.ModelAdmin):
-    list_display = ['match','current_innings','current_striker','current_non_striker', 'current_bowler', 'balls_remaining']    
+    list_display = ['match','current_innings','current_striker','current_non_striker', 'current_bowler']    
     list_filter = ['match__status', 'match__tournament']
     search_fields = ['match__tournament__name', 'match__team1__team_name', 'match__team2__team_name']
     list_select_related = ['match', 'match__tournament', 'current_innings', 'current_striker', 'current_non_striker', 'current_bowler']

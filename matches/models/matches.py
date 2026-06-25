@@ -44,14 +44,13 @@ class Match(models.Model):
         return f"{self.round_type} R{self.round_number} — {self.tournament.name}"
 
 
-
-
 class TossDecision(models.TextChoices):
     BAT = 'BAT', 'Bat'
     BOWL = 'BOWL', 'Bowl'
 class TeamMatchSide(models.TextChoices):
     A = 'A', 'A'
     B = 'B', 'B'
+    
 class TeamMatch(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='team_matches')
@@ -71,31 +70,41 @@ class TeamMatch(models.Model):
     def __str__(self):
         return f"{self.team.short_name} ({self.side}) — Match {self.match_id}"
     
-    
+        
 class MatchLiveState(models.Model):
     match = models.OneToOneField(
-        'matches.Match', 
-        on_delete=models.CASCADE, 
+        'matches.Match',
+        on_delete=models.CASCADE,
         related_name='live_state'
     )
     current_innings = models.ForeignKey(
-        'matches.Innings', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True
+        'matches.Innings',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='+'
     )
-    current_striker = models.ForeignKey('teams.TournamentSquad', on_delete=models.SET_NULL, null=True, related_name='live_striking')
-    current_non_striker = models.ForeignKey('teams.TournamentSquad', on_delete=models.SET_NULL, null=True, related_name='live_non_striking')
-    current_bowler = models.ForeignKey('teams.TournamentSquad', on_delete=models.SET_NULL, null=True, related_name='live_bowling')
-    target_runs = models.PositiveIntegerField(default=0)  
-    balls_remaining = models.PositiveIntegerField(default=120)
+    current_striker = models.ForeignKey(
+        'players.Player',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='live_striking'
+    )
+    current_non_striker = models.ForeignKey(
+        'players.Player',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='live_non_striking'
+    )
+    current_bowler = models.ForeignKey(
+        'players.Player',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='live_bowling'
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'match_live_states'
-        verbose_name = "Match Live State"
-        verbose_name_plural = "Match Live States"
-        
+
     def __str__(self):
-        innings_status = f"Innings {self.current_innings.innings_number}" if self.current_innings else "Setup"
-        return f"Live State: {self.match} ({innings_status})"
+        return f"Live: {self.match}"
