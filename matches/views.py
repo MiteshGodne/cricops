@@ -9,6 +9,10 @@ from .services import process_delivery, get_live_score, update_standings
 class MatchViewSet(viewsets.ModelViewSet):
     queryset = Match.objects.select_related('tournament', 'venue', 'winner_team', 'primary_umpire').all()
     serializer_class = MatchSerializer
+    def perform_update(self, serializer):
+        match = serializer.save()
+        if match.status == 'COMPLETED':
+            update_standings(match)
 
 class InningsViewSet(viewsets.ModelViewSet):
     queryset = Innings.objects.select_related('match', 'batting_team', 'fielding_team').all()
@@ -68,7 +72,3 @@ def live_score(request, match_id):
             status=status.HTTP_404_NOT_FOUND
         )
         
-def perform_update(self, serializer):
-    match = serializer.save()
-    if match.status == 'COMPLETED':
-        update_standings(match)

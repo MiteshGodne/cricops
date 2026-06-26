@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from .models import Regulation, Tournament, Application, Group, TournamentStanding, TournamentOrganizer
 from .serializers import RegulationSerializer, TournamentSerializer, ApplicationSerializer, GroupSerializer, TournamentStandingSerializer, TournamentOrganizerSerializer
+from django.utils import timezone
 
 class RegulationViewSet(viewsets.ModelViewSet):
     queryset = Regulation.objects.all()
@@ -17,6 +18,11 @@ class TournamentOrganizerViewSet(viewsets.ModelViewSet):
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.select_related('team', 'tournament').all()
     serializer_class = ApplicationSerializer
+    def perform_update(self, serializer):
+        if 'status' in serializer.validated_data:
+            serializer.save(processed_at=timezone.now())
+        else:
+            serializer.save()
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.select_related('tournament').all()
