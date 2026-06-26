@@ -3,6 +3,7 @@ from django.db.models import Sum, Count, Q
 from .models import Delivery, PlayerDelivery, Innings, MatchLiveState
 from tournaments.models import TournamentStanding
 from players.models import Player
+from django.utils import timezone
 
 def get_next_ball_sequence(innings):
     last = Delivery.objects.filter(innings=innings).order_by('-ball_sequence').first()
@@ -68,7 +69,7 @@ def process_delivery(validated_data):
             runs_attributed=runs + extra_runs
         ),
     ]
-    # add fielder if applicable
+    # add fielder if applicable for wicket 
     if wicket_type in ['CAUGHT', 'STUMPED'] and fielder_id:
         fielder = Player.objects.get(player_id=fielder_id)
         player_deliveries.append(PlayerDelivery(
@@ -99,15 +100,38 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         innings.total_sixes += 1
     if wicket_type != 'NONE' and extra_type != 'NO_BALL':
         innings.total_wickets += 1
+
+    legal_count = 0
     if is_legal:
         legal_count = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
         innings.overs_completed = float(f"{legal_count // 6}.{legal_count % 6}")
 
+    regulation = innings.match.tournament.regulation
+    max_wickets = regulation.players_per_side - 1
+    overs_done = bool(regulation.overs_per_innings) and legal_count >= regulation.overs_per_innings * 6
+    all_out = innings.total_wickets >= max_wickets
+    target_chased = bool(innings.target_runs) and innings.total_score >= innings.target_runs
+    just_completed = (overs_done or all_out or target_chased) and not innings.is_completed
+
+    if just_completed:
+        innings.is_completed = True
+        innings.end_time = timezone.now()
+
     innings.save(update_fields=[
         'total_score', 'total_wickets', 'total_extras',
         'total_wides', 'total_noballs', 'total_fours',
-        'total_sixes', 'overs_completed'
+        'total_sixes', 'overs_completed', 'is_completed', 'end_time'
     ])
+
+    # auto set next innings target when this innings completes
+    if just_completed and not target_chased:
+        next_innings = Innings.objects.filter(
+            match=innings.match, innings_number=innings.innings_number + 1
+        ).first()
+        if next_innings and not next_innings.target_runs:
+            next_innings.target_runs = innings.total_score + 1
+            next_innings.save(update_fields=['target_runs'])
+            
 
 def update_live_state(innings, striker, non_striker, bowler):
     MatchLiveState.objects.update_or_create(
