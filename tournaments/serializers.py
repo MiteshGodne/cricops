@@ -40,5 +40,5 @@ class TournamentStandingSerializer(serializers.ModelSerializer):
         model = TournamentStanding
         fields = '__all__'
         read_only_fields = [
-            'standing_id', 'updated_at', 'matches_played', 'matches_won', 'matches_lost', 'matches_tied', 'matches_no_result', 'points', 'net_run_rate'
+            'tournament_standing_id', 'updated_at', 'matches_played', 'matches_won', 'matches_lost', 'matches_tied', 'matches_no_result', 'points', 'net_run_rate'
         ]
