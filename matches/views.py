@@ -2,8 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 # from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Match, Innings, MatchLiveState, TeamMatch
-from .serializers import MatchSerializer, InningsSerializer, DeliveryInputSerializer, LiveScoreSerializer, TeamMatchSerializer
+from .models import Match, Innings, MatchLiveState, TeamMatch, Delivery, PlayerDelivery
+from .serializers import MatchSerializer, InningsSerializer, DeliveryInputSerializer, LiveScoreSerializer, TeamMatchSerializer, DeliverySerializer, PlayerDeliverySerializer
 from .services import process_delivery, get_live_score, update_standings
 
 class MatchViewSet(viewsets.ModelViewSet):
@@ -17,6 +17,14 @@ class InningsViewSet(viewsets.ModelViewSet):
 class TeamMatchViewSet(viewsets.ModelViewSet):
     queryset = TeamMatch.objects.select_related('match', 'team').all()
     serializer_class = TeamMatchSerializer
+
+class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Delivery.objects.select_related('innings', 'match').all()
+    serializer_class = DeliverySerializer
+
+class PlayerDeliveryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = PlayerDelivery.objects.select_related('player', 'delivery').all()
+    serializer_class = PlayerDeliverySerializer
 
 
 @api_view(['POST'])

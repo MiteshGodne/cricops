@@ -19,15 +19,15 @@ class InningsSerializer(serializers.ModelSerializer):
         model = Innings
         fields = '__all__'   
 
+class DeliverySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Delivery
+        fields = '__all__'
+        
 class PlayerDeliverySerializer(serializers.ModelSerializer):
     class Meta:
         model = PlayerDelivery
         fields = '__all__'
-
-# class DeliverySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Delivery
-#         fields = '__all__'
 
 # for Umpire : Write serializers
 class DeliveryInputSerializer(serializers.Serializer):
