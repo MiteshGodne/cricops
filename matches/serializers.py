@@ -17,8 +17,7 @@ class InningsSerializer(serializers.ModelSerializer):
     fielding_team_name = serializers.CharField(source='fielding_team.team_name', read_only=True)
     class Meta:
         model = Innings
-        fields = '__all__'
-        
+        fields = '__all__'   
 
 class PlayerDeliverySerializer(serializers.ModelSerializer):
     class Meta:
