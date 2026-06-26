@@ -33,13 +33,16 @@ class UserRole(models.TextChoices):
 class User(AbstractUser):
     username = None
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
     email = models.EmailField(unique=True)
-    is_email_verified = models.BooleanField(default=False)
-    email_verification_token = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True)
-    phone = models.CharField(max_length=15, blank=True, null=True)
-    is_phone_verified = models.BooleanField(default=False)
+    phone = models.CharField(max_length=15)
+    middle_name = models.CharField(max_length=15, blank=True, null=True)
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.VIEWER)
     avatar_url = models.ImageField(upload_to='avatars/', blank=True, null=True)    
+    
+    email_verification_token = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True)
+    is_phone_verified = models.BooleanField(default=False)
+    is_email_verified = models.BooleanField(default=False)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
