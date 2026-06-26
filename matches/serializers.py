@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Match, TeamMatch, Innings, Delivery, PlayerDelivery
+from .models.deliveries import ExtraType
 
 class MatchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,7 +38,7 @@ class DeliveryInputSerializer(serializers.Serializer):
     bowler_id = serializers.UUIDField()
     runs_scored = serializers.IntegerField(default=0, min_value=0, max_value=7)
     extra_type = serializers.ChoiceField(
-        choices=Delivery.ExtraType.choices if hasattr(Delivery, 'ExtraType') else [
+        choices=ExtraType.choices if hasattr(Delivery, 'ExtraType') else [
             ('WIDE','Wide'),('NO_BALL','No Ball'),('BYE','Bye'),('LEG_BYE','Leg Bye'),('NONE','None')
         ],
         default='NONE'

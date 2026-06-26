@@ -80,12 +80,11 @@ def process_delivery(validated_data):
     PlayerDelivery.objects.bulk_create(player_deliveries)
 
     # update innings totals & live state 
-    update_innings_totals(innings, delivery, runs, extra_runs, extra_type, is_legal)
+    update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal)
     update_live_state(innings, striker, non_striker, bowler)
     return delivery
 
-@transaction.atomic
-def update_innings_totals(innings, delivery, runs, extra_runs, extra_type, is_legal):
+def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal):
     innings.total_score += runs + extra_runs
     if extra_type in ['WIDE', 'NO_BALL']:
         innings.total_extras += extra_runs + 1
@@ -97,7 +96,7 @@ def update_innings_totals(innings, delivery, runs, extra_runs, extra_type, is_le
         innings.total_fours += 1
     if runs == 6 and extra_type == 'NONE':
         innings.total_sixes += 1
-    if delivery.is_wicket and extra_type != 'NO_BALL':
+    if wicket_type != 'NONE' and extra_type != 'NO_BALL':
         innings.total_wickets += 1
     if is_legal:
         legal_count = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
@@ -109,7 +108,6 @@ def update_innings_totals(innings, delivery, runs, extra_runs, extra_type, is_le
         'total_sixes', 'overs_completed'
     ])
 
-@transaction.atomic
 def update_live_state(innings, striker, non_striker, bowler):
     MatchLiveState.objects.update_or_create(
         match=innings.match,
@@ -120,7 +118,6 @@ def update_live_state(innings, striker, non_striker, bowler):
             'current_bowler': bowler,
         }
     )
-
 
 @transaction.atomic
 def get_live_score(match):
