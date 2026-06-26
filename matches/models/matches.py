@@ -36,6 +36,7 @@ class Match(models.Model):
     result_note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    standings_applied = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'matches'

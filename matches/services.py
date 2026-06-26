@@ -204,7 +204,7 @@ def get_live_score(match):
 
 @transaction.atomic
 def update_standings(match):
-    if match.status != 'COMPLETED':
+    if match.status != 'COMPLETED' or match.result_type is None or match.standings_applied:
         return
 
     regulation = match.tournament.regulation
@@ -231,3 +231,5 @@ def update_standings(match):
             standing.matches_lost += 1
             standing.points += regulation.points_for_loss
         standing.save()
+    match.standings_applied = True
+    match.save(update_fields=['standings_applied'])
