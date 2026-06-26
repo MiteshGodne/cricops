@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.db.models import Sum, Count, Q
 from .models import Delivery, PlayerDelivery, Innings, MatchLiveState
+from tournaments.models import TournamentStanding
 from players.models import Player
 
 def get_next_ball_sequence(innings):
@@ -200,3 +201,33 @@ def get_live_score(match):
         'current_batsmen': [striker_data, non_striker_data],
         'current_bowler': bowler_data,
     }
+
+@transaction.atomic
+def update_standings(match):
+    if match.status != 'COMPLETED':
+        return
+
+    regulation = match.tournament.regulation
+    team_matches = match.team_matches.select_related('team').all()
+    for tm in team_matches:
+        standing, _ = TournamentStanding.objects.get_or_create(
+            tournament=match.tournament, team=tm.team,
+            defaults={'group': match.group}
+        )
+        standing.matches_played += 1
+        if match.result_type == 'TIE':
+            standing.matches_tied += 1
+            standing.points += regulation.points_for_tie
+        elif match.result_type == 'NO_RESULT':
+            standing.matches_no_result += 1
+            standing.points += regulation.points_for_no_result
+        elif match.result_type == 'ABANDONED':
+            standing.matches_no_result += 1
+            standing.points += regulation.points_for_no_result
+        elif match.winner_team_id == tm.team_id:
+            standing.matches_won += 1
+            standing.points += regulation.points_for_win
+        else:
+            standing.matches_lost += 1
+            standing.points += regulation.points_for_loss
+        standing.save()

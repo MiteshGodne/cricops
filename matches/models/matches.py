@@ -12,11 +12,17 @@ class RoundType(models.TextChoices):
     QUARTERFINAL = 'QUARTERFINAL', 'Quarterfinal'
     SEMIFINAL = 'SEMIFINAL', 'Semifinal'
     FINAL = 'FINAL', 'Final'
+class MatchResultType(models.TextChoices):
+    WIN = 'WIN', 'Win'
+    TIE = 'TIE', 'Tie'
+    NO_RESULT = 'NO_RESULT', 'No Result'
+    ABANDONED = 'ABANDONED', 'Abandoned'
 
 class Match(models.Model):
     match_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tournament = models.ForeignKey('tournaments.Tournament', on_delete=models.CASCADE, related_name='matches')
     venue = models.ForeignKey('venues.Venue', on_delete=models.SET_NULL, null=True, related_name='matches')
+    result_type = models.CharField(max_length=20, choices=MatchResultType.choices, null=True, blank=True)
     winner_team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='matches_won')
     runnerup_team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True,related_name='tournaments_runner_up')    
     group = models.ForeignKey('tournaments.Group', null=True, blank=True, on_delete=models.SET_NULL, related_name='matches')

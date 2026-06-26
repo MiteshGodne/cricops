@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Match, Innings, MatchLiveState, TeamMatch
 from .serializers import MatchSerializer, InningsSerializer, DeliveryInputSerializer, LiveScoreSerializer, TeamMatchSerializer
-from .services import process_delivery, get_live_score
+from .services import process_delivery, get_live_score, update_standings
 
 class MatchViewSet(viewsets.ModelViewSet):
     queryset = Match.objects.select_related('tournament', 'venue', 'winner_team', 'primary_umpire').all()
@@ -59,3 +59,8 @@ def live_score(request, match_id):
             {'error': 'Live state not initialized'},
             status=status.HTTP_404_NOT_FOUND
         )
+        
+def perform_update(self, serializer):
+    match = serializer.save()
+    if match.status == 'COMPLETED':
+        update_standings(match)
