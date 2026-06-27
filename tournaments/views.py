@@ -14,6 +14,8 @@ class RegulationViewSet(viewsets.ModelViewSet):
 class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.select_related('regulation', 'created_by').all()
     serializer_class = TournamentSerializer
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
     def get_queryset(self):
         qs = super().get_queryset()
         for t in qs.filter(status='ACCEPTING_APPLICATIONS'):
@@ -26,10 +28,10 @@ class TournamentOrganizerViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='open')
     def open_tournaments(self, request):
-        qs = self.get_queryset().filter(
+        qs = Tournament.objects.filter(
             status='ACCEPTING_APPLICATIONS', application_deadline__gt=timezone.now()
         )
-        serializer = self.get_serializer(qs, many=True)
+        serializer = TournamentSerializer(qs, many=True)
         return Response(serializer.data)
 
 class ApplicationViewSet(viewsets.ModelViewSet):
