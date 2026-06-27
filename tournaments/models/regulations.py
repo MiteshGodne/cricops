@@ -29,7 +29,7 @@ class Regulation(models.Model):
     ''' Match rules '''
     match_format = models.CharField(max_length=10, choices=MatchFormat.choices, default=MatchFormat.T20)
     overs_per_innings = models.SmallIntegerField(null=True, blank=True)  
-    innings_per_match = models.SmallIntegerField(default=1)
+    innings_per_team = models.SmallIntegerField(default=1) 
     max_overs_per_bowler = models.SmallIntegerField(null=True, blank=True)
     max_bouncers_per_over = models.SmallIntegerField(default=0)
     players_per_side = models.SmallIntegerField(default=11)

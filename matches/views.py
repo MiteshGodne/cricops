@@ -21,6 +21,11 @@ class MatchViewSet(viewsets.ModelViewSet):
         match.standings_applied = False
         update_standings(match)  
         return Response({'status': 'match abandoned'})
+    
+    def perform_create(self, serializer):
+        match = serializer.save()
+        match.innings_count = match.tournament.regulation.innings_per_team * 2
+        match.save(update_fields=['innings_count'])
 
 class InningsViewSet(viewsets.ModelViewSet):
     queryset = Innings.objects.select_related('match', 'batting_team', 'fielding_team').all()

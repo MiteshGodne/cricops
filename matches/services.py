@@ -139,13 +139,9 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
 
 
 def finalize_match_result(match):
-    regulation = match.tournament.regulation
-    expected_innings = regulation.innings_per_match * 2 
     innings_qs = Innings.objects.filter(match=match).order_by('innings_number')
-
-    if innings_qs.count() < expected_innings or not all(i.is_completed for i in innings_qs):
-        return
-    
+    if innings_qs.count() < match.innings_count or not all(i.is_completed for i in innings_qs):
+        return    
     first, second = innings_qs[0], innings_qs[1]
     if first.total_score > second.total_score:
         match.winner_team, match.runnerup_team, match.result_type = first.batting_team, second.batting_team, 'WIN'
