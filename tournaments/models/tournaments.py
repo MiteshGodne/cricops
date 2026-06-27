@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.utils import timezone
 
 class TournamentStatus(models.TextChoices):
     UPCOMING = 'UPCOMING', 'Upcoming'
@@ -67,6 +68,11 @@ class Tournament(models.Model):
     class Meta:
         db_table = 'tournaments'
         ordering = ['-created_at']
+    
+    def refresh_status(self):
+        if self.status == 'ACCEPTING_APPLICATIONS' and self.application_deadline and timezone.now() >= self.application_deadline:
+            self.status = 'APPLICATIONS_CLOSED'
+            self.save(update_fields=['status'])
 
     def __str__(self):
         return f"{self.name} ({self.category})"

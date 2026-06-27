@@ -14,6 +14,11 @@ class RegulationViewSet(viewsets.ModelViewSet):
 class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.select_related('regulation', 'created_by').all()
     serializer_class = TournamentSerializer
+    def get_queryset(self):
+        qs = super().get_queryset()
+        for t in qs.filter(status='ACCEPTING_APPLICATIONS'):
+            t.refresh_status()
+        return qs
 
 class TournamentOrganizerViewSet(viewsets.ModelViewSet):
     queryset = TournamentOrganizer.objects.select_related('tournament', 'user').all()
