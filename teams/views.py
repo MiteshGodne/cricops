@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.db import IntegrityError
+from django.utils import timezone
 from .models import Team, TournamentSquad
 from .serializers import TeamSerializer, TournamentSquadSerializer
 
@@ -18,8 +19,26 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         player = serializer.validated_data['player']
         team = serializer.validated_data['team']
+        tournament = serializer.validated_data['tournament']
+        is_playing_xi = serializer.validated_data.get('is_playing_xi', True)
+        squad_role = serializer.validated_data.get('squad_role', 'PLAYER')
+
+        if tournament.status != 'ACCEPTING_APPLICATIONS' or (
+            tournament.application_deadline and tournament.application_deadline < timezone.now()
+        ):
+            return Response({'error': 'Tournament is not accepting squad entries.'}, status=400)
+
         if player.current_team_id != team.team_id:
             return Response({'error': 'Player does not belong to this team.'}, status=400)
+
+        if is_playing_xi:
+            xi_count = TournamentSquad.objects.filter(
+                tournament=tournament, team=team, is_playing_xi=True
+            ).count()
+            max_xi = tournament.regulation.players_per_side
+            if xi_count >= max_xi:
+                return Response({'error': f'Playing XI limit ({max_xi}) reached for this team.'}, status=400)
+
         try:
             self.perform_create(serializer)
         except IntegrityError as e:
