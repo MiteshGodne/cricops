@@ -56,6 +56,13 @@ def process_delivery(validated_data):
         PlayerDelivery(delivery=delivery, player=non_striker, performance_role='NON_STRIKER', runs_attributed=0),
         PlayerDelivery(delivery=delivery, player=bowler, performance_role='BOWLER', runs_attributed=runs + extra_runs),
     ]
+    
+    if wicket_type != 'NONE':
+        dismissed_id = dismissed_player_id or striker.player_id
+    for pd in player_deliveries:
+        if pd.player_id == dismissed_id:
+            pd.dismissal_info = f"{wicket_type}"
+    
     if wicket_type in ['CAUGHT', 'STUMPED'] and fielder_id:
         fielder = Player.objects.get(player_id=fielder_id)
         player_deliveries.append(PlayerDelivery(
@@ -263,7 +270,7 @@ def get_live_score(match):
             performance_role='BOWLER'
         ).aggregate(
             runs=Sum('runs_attributed'),
-            wickets=Count('id', filter=Q(delivery__is_wicket=True))
+            wickets=Count('id', filter=Q(delivery__wicket_type__in=['BOWLED','CAUGHT','LBW','STUMPED','HIT_WICKET']))
         )
         legal_balls = Delivery.objects.filter(
             innings=innings,

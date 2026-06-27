@@ -56,7 +56,10 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
         if team_matches.count() != 2:
             return Response({'error': 'Both teams not added to match'}, status=400)
 
-        winner_tm = team_matches.get(team_id=toss_winner_team_id)
+        try:
+            winner_tm = team_matches.get(team_id=toss_winner_team_id)
+        except TeamMatch.DoesNotExist:
+            return Response({'error': 'Invalid toss_winner_team_id for this match.'}, status=400)
         loser_tm = team_matches.exclude(team_id=toss_winner_team_id).first()
 
         winner_tm.is_toss_winner = True

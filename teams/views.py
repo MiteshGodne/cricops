@@ -5,10 +5,11 @@ from django.utils import timezone
 from .models import Team, TournamentSquad
 from .serializers import TeamSerializer, TournamentSquadSerializer
 
-
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.select_related('team_head').all()
     serializer_class = TeamSerializer
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, team_head=self.request.user)
 
 class TournamentSquadViewSet(viewsets.ModelViewSet):
     queryset = TournamentSquad.objects.select_related('player', 'team', 'tournament').all()
