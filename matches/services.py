@@ -48,11 +48,7 @@ def process_delivery(validated_data):
     over_number = (legal_count_before // 6) + 1
     ball_number = (legal_count_before % 6) + 1
 
-    delivery = Delivery.objects.create(
-        match=innings.match, innings=innings, ball_sequence=ball_sequence,
-        over_number=over_number, ball_number=ball_number, runs_scored=runs,
-        extra_type=extra_type, wicket_type=wicket_type,
-    )
+    delivery = Delivery.objects.create(match=innings.match, innings=innings, ball_sequence=ball_sequence,over_number=over_number, ball_number=ball_number, runs_scored=runs,extra_type=extra_type, wicket_type=wicket_type,is_boundary=validated_data.get('is_boundary', False),)
 
     player_deliveries = [
         PlayerDelivery(delivery=delivery, player=striker, performance_role='STRIKER',
@@ -69,7 +65,7 @@ def process_delivery(validated_data):
         ))
     PlayerDelivery.objects.bulk_create(player_deliveries)
 
-    update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal)
+    update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal, is_boundary=validated_data.get('is_boundary', False))
 
     # auto-rotation logic
     legal_count_after = legal_count_before + (1 if is_legal else 0)
@@ -82,7 +78,7 @@ def process_delivery(validated_data):
 
     return delivery
 
-def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal):
+def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal, is_boundary=False):
     innings.total_score += runs + extra_runs
     if extra_type in ['WIDE', 'NO_BALL']:
         innings.total_extras += extra_runs + 1
@@ -90,10 +86,11 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         innings.total_wides += 1
     if extra_type == 'NO_BALL':
         innings.total_noballs += 1
-    if runs == 4 and extra_type == 'NONE':
+    if is_boundary and runs == 4:
         innings.total_fours += 1
-    if runs == 6 and extra_type == 'NONE':
+    if is_boundary and runs == 6:
         innings.total_sixes += 1
+    ...
     if wicket_type != 'NONE' and extra_type != 'NO_BALL':
         innings.total_wickets += 1
 
@@ -125,7 +122,15 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
     match = innings.match
     total_innings_expected = match.innings_count
     next_innings = Innings.objects.filter(match=match, innings_number=innings.innings_number + 1).first()
-
+    if not next_innings and innings.innings_number < total_innings_expected and not target_chased:
+        next_innings = Innings.objects.create(
+            match=match,
+            innings_number=innings.innings_number + 1,
+            batting_team=innings.fielding_team,
+            fielding_team=innings.batting_team,
+            target_runs=innings.total_score + 1,
+        )
+        return 
     if next_innings and not target_chased:
         if not next_innings.target_runs:
             next_innings.target_runs = innings.total_score + 1

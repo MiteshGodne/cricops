@@ -50,6 +50,7 @@ class DeliveryInputSerializer(serializers.Serializer):
         ],
         default='NONE'
     )
+    is_boundary = serializers.BooleanField(default=False)
     fielder_id = serializers.UUIDField(required=False, allow_null=True)
     dismissed_player_id = serializers.UUIDField(required=False, allow_null=True)    
     def validate(self, data):

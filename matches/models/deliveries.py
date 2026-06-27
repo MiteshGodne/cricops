@@ -36,6 +36,7 @@ class Delivery(models.Model):
         output_field=models.BooleanField(),
         db_persist=True
     )
+    is_boundary = models.BooleanField(default=False) 
     wicket_type = models.CharField(max_length=20, choices=WicketType.choices, default=WicketType.NONE)
     is_wicket = models.GeneratedField(
         expression= models.Case(
