@@ -18,6 +18,14 @@ class TournamentViewSet(viewsets.ModelViewSet):
 class TournamentOrganizerViewSet(viewsets.ModelViewSet):
     queryset = TournamentOrganizer.objects.select_related('tournament', 'user').all()
     serializer_class = TournamentOrganizerSerializer
+    
+    @action(detail=False, methods=['get'], url_path='open')
+    def open_tournaments(self, request):
+        qs = self.get_queryset().filter(
+            status='ACCEPTING_APPLICATIONS', application_deadline__gt=timezone.now()
+        )
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.select_related('team', 'tournament').all()
