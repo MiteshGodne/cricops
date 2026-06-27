@@ -51,7 +51,14 @@ class DeliveryInputSerializer(serializers.Serializer):
         default='NONE'
     )
     fielder_id = serializers.UUIDField(required=False, allow_null=True)
-    dismissed_player_id = serializers.UUIDField(required=False, allow_null=True)
+    dismissed_player_id = serializers.UUIDField(required=False, allow_null=True)    
+    def validate(self, data):
+        if data.get('extra_type') == 'NONE' and data.get('extra_runs', 0) > 0:
+            raise serializers.ValidationError("extra_runs must be 0 when extra_type is NONE.")
+        if data.get('extra_type') != 'NONE' and data.get('extra_runs', 0) == 0 and data.get('extra_type') in ['BYE', 'LEG_BYE']:
+            raise serializers.ValidationError("extra_runs must be > 0 for BYE/LEG_BYE.")
+        return data
+
 
 
 # for Viewer : Read serializer
