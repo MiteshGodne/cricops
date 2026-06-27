@@ -79,6 +79,21 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         squad_qs.update(application=application)
         return Response({'application_id': application.application_id, 'players_linked': squad_qs.count()}, status=201)
     
+    @action(detail=True, methods=['post'], url_path='reapply')
+    def reapply(self, request, pk=None):
+        application = self.get_object()
+        if application.status != 'REJECTED':
+            return Response({'error': 'Only rejected applications can be resubmitted.'}, status=400)
+        if application.tournament.status != 'ACCEPTING_APPLICATIONS':
+            return Response({'error': 'Tournament is no longer accepting applications.'}, status=400)
+
+        application.status = 'PENDING'
+        application.remarks = request.data.get('remarks', '')
+        application.processed_at = None
+        application.processed_by = None
+        application.save(update_fields=['status', 'remarks', 'processed_at', 'processed_by'])
+        return Response(ApplicationSerializer(application).data)
+    
     
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.select_related('tournament').all()
