@@ -58,6 +58,16 @@ class DeliveryInputSerializer(serializers.Serializer):
             raise serializers.ValidationError("extra_runs must be 0 when extra_type is NONE.")
         if data.get('extra_type') != 'NONE' and data.get('extra_runs', 0) == 0 and data.get('extra_type') in ['BYE', 'LEG_BYE']:
             raise serializers.ValidationError("extra_runs must be > 0 for BYE/LEG_BYE.")
+    
+        extra_type = data.get('extra_type', 'NONE')
+        wicket_type = data.get('wicket_type', 'NONE')
+        invalid_off_noball = {'BOWLED', 'CAUGHT', 'LBW', 'STUMPED', 'HIT_WICKET'}
+        invalid_off_wide = {'BOWLED', 'CAUGHT', 'LBW', 'HIT_WICKET'}
+    
+        if extra_type == 'NO_BALL' and wicket_type in invalid_off_noball:
+            raise serializers.ValidationError(f"{wicket_type} is not a valid dismissal off a no-ball.")
+        if extra_type == 'WIDE' and wicket_type in invalid_off_wide:
+            raise serializers.ValidationError(f"{wicket_type} is not a valid dismissal off a wide.")
         return data
 
 

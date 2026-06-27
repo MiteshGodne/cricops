@@ -90,8 +90,7 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         innings.total_fours += 1
     if is_boundary and runs == 6:
         innings.total_sixes += 1
-    ...
-    if wicket_type != 'NONE' and extra_type != 'NO_BALL':
+    if wicket_type != 'NONE':
         innings.total_wickets += 1
 
     legal_count = 0
