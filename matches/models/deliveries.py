@@ -1,7 +1,6 @@
 from django.db import models
 import uuid
 from django.db.models import Q
-from django.db.models.functions import Coalesce
 
 class ExtraType(models.TextChoices):
     WIDE = 'WIDE', 'Wide'
