@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Match, TeamMatch, Innings, Delivery, PlayerDelivery
-from .models.deliveries import ExtraType
+from .models.deliveries import ExtraType, WicketType
 
 class MatchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,20 +36,9 @@ class DeliveryInputSerializer(serializers.Serializer):
     non_striker_id = serializers.UUIDField()
     bowler_id = serializers.UUIDField()
     runs_scored = serializers.IntegerField(default=0, min_value=0, max_value=7)
-    extra_type = serializers.ChoiceField(
-        choices=ExtraType.choices if hasattr(Delivery, 'ExtraType') else [
-            ('WIDE','Wide'),('NO_BALL','No Ball'),('BYE','Bye'),('LEG_BYE','Leg Bye'),('NONE','None')
-        ],
-        default='NONE'
-    )
+    extra_type = serializers.ChoiceField(choices=ExtraType.choices, default='NONE')
     extra_runs = serializers.IntegerField(default=0, min_value=0)
-    wicket_type = serializers.ChoiceField(
-        choices=[
-            ('BOWLED','Bowled'),('CAUGHT','Caught'),('LBW','LBW'),
-            ('RUN_OUT','Run Out'),('STUMPED','Stumped'),('HIT_WICKET','Hit Wicket'),('NONE','None')
-        ],
-        default='NONE'
-    )
+    wicket_type = serializers.ChoiceField(choices=WicketType.choices, default='NONE')
     is_boundary = serializers.BooleanField(default=False)
     fielder_id = serializers.UUIDField(required=False, allow_null=True)
     dismissed_player_id = serializers.UUIDField(required=False, allow_null=True)    
@@ -58,12 +47,12 @@ class DeliveryInputSerializer(serializers.Serializer):
             raise serializers.ValidationError("extra_runs must be 0 when extra_type is NONE.")
         if data.get('extra_type') != 'NONE' and data.get('extra_runs', 0) == 0 and data.get('extra_type') in ['BYE', 'LEG_BYE']:
             raise serializers.ValidationError("extra_runs must be > 0 for BYE/LEG_BYE.")
-    
+
         extra_type = data.get('extra_type', 'NONE')
         wicket_type = data.get('wicket_type', 'NONE')
         invalid_off_noball = {'BOWLED', 'CAUGHT', 'LBW', 'STUMPED', 'HIT_WICKET'}
         invalid_off_wide = {'BOWLED', 'CAUGHT', 'LBW', 'HIT_WICKET'}
-    
+
         if extra_type == 'NO_BALL' and wicket_type in invalid_off_noball:
             raise serializers.ValidationError(f"{wicket_type} is not a valid dismissal off a no-ball.")
         if extra_type == 'WIDE' and wicket_type in invalid_off_wide:
