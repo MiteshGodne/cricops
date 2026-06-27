@@ -2,6 +2,7 @@ from django.db import transaction
 from django.db.models import Sum, Count, Q
 from .models import Delivery, PlayerDelivery, Innings, MatchLiveState
 from tournaments.models import TournamentStanding
+from teams.models import TournamentSquad
 from players.models import Player
 from django.utils import timezone
 
@@ -9,14 +10,31 @@ def get_next_ball_sequence(innings):
     last = Delivery.objects.filter(innings=innings).order_by('-ball_sequence').first()
     return (last.ball_sequence + 1) if last else 1
 
-def calculate_overs(legal_ball_count):
-    return f"{legal_ball_count // 6}.{legal_ball_count % 6}"
+def sync_match_status(match):
+    if match.status == 'SCHEDULED' and match.start_date and timezone.now() >= match.start_date:
+        match.status = 'LIVE'
+        match.save(update_fields=['status'])
+
+def validate_playing_xi(innings, striker, non_striker, bowler):
+    tournament = innings.match.tournament
+    batting_squad_ids = set(TournamentSquad.objects.filter(
+        tournament=tournament, team=innings.batting_team, is_playing_xi=True
+    ).values_list('player_id', flat=True))
+    fielding_squad_ids = set(TournamentSquad.objects.filter(
+        tournament=tournament, team=innings.fielding_team, is_playing_xi=True
+    ).values_list('player_id', flat=True))
+
+    if striker.player_id not in batting_squad_ids or non_striker.player_id not in batting_squad_ids:
+        raise ValueError("Striker/non-striker must be in batting team's playing XI for this tournament.")
+    if bowler.player_id not in fielding_squad_ids:
+        raise ValueError("Bowler must be in fielding team's playing XI for this tournament.")
 
 @transaction.atomic
 def process_delivery(validated_data):
     innings = Innings.objects.select_related('match', 'batting_team', 'fielding_team').get(
         innings_id=validated_data['innings_id']
     )
+    sync_match_status(innings.match)
     striker = Player.objects.get(player_id=validated_data['striker_id'])
     non_striker = Player.objects.get(player_id=validated_data['non_striker_id'])
     bowler = Player.objects.get(player_id=validated_data['bowler_id'])
@@ -29,61 +47,45 @@ def process_delivery(validated_data):
     ball_sequence = get_next_ball_sequence(innings)
     is_legal = extra_type not in ['WIDE', 'NO_BALL']
 
-    # calculate over & ball number from legal deliveries
-    legal_count = Delivery.objects.filter(
-        innings=innings, is_legal_delivery=True
-    ).count()
-    over_number = (legal_count // 6) + 1
-    ball_number = (legal_count % 6) + 1
+    # validate playing XI - see section 6 below
+    validate_playing_xi(innings, striker, non_striker, bowler)
 
-    # create delivery
+    legal_count_before = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
+    over_number = (legal_count_before // 6) + 1
+    ball_number = (legal_count_before % 6) + 1
+
     delivery = Delivery.objects.create(
-        match=innings.match,
-        innings=innings,
-        ball_sequence=ball_sequence,
-        over_number=over_number,
-        ball_number=ball_number,
-        runs_scored=runs,
-        extra_type=extra_type,
-        wicket_type=wicket_type,
+        match=innings.match, innings=innings, ball_sequence=ball_sequence,
+        over_number=over_number, ball_number=ball_number, runs_scored=runs,
+        extra_type=extra_type, wicket_type=wicket_type,
     )
 
-    # create player_delivery rows
     player_deliveries = [
-        PlayerDelivery(
-            delivery=delivery,
-            player=striker,
-            performance_role='STRIKER',
-            runs_attributed=runs if extra_type in ['NONE', 'NO_BALL'] else 0
-        ),
-        PlayerDelivery(
-            delivery=delivery,
-            player=non_striker,
-            performance_role='NON_STRIKER',
-            runs_attributed=0
-        ),
-        PlayerDelivery(
-            delivery=delivery,
-            player=bowler,
-            performance_role='BOWLER',
-            runs_attributed=runs + extra_runs
-        ),
+        PlayerDelivery(delivery=delivery, player=striker, performance_role='STRIKER',
+                        runs_attributed=runs if extra_type in ['NONE', 'NO_BALL'] else 0),
+        PlayerDelivery(delivery=delivery, player=non_striker, performance_role='NON_STRIKER', runs_attributed=0),
+        PlayerDelivery(delivery=delivery, player=bowler, performance_role='BOWLER', runs_attributed=runs + extra_runs),
     ]
-    # add fielder if applicable for wicket 
     if wicket_type in ['CAUGHT', 'STUMPED'] and fielder_id:
         fielder = Player.objects.get(player_id=fielder_id)
         player_deliveries.append(PlayerDelivery(
-            delivery=delivery,
-            player=fielder,
+            delivery=delivery, player=fielder,
             performance_role='FIELDER_CATCH' if wicket_type == 'CAUGHT' else 'FIELDER_RUNOUT',
-            runs_attributed=0,
-            dismissal_info=f"{wicket_type} by {fielder.full_name}"
+            runs_attributed=0, dismissal_info=f"{wicket_type} by {fielder.full_name}"
         ))
     PlayerDelivery.objects.bulk_create(player_deliveries)
 
-    # update innings totals & live state 
     update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal)
-    update_live_state(innings, striker, non_striker, bowler)
+
+    # auto-rotation logic
+    legal_count_after = legal_count_before + (1 if is_legal else 0)
+    odd_runs = is_legal and (runs % 2 == 1) and extra_type == 'NONE'
+    over_just_ended = is_legal and legal_count_after % 6 == 0
+    should_swap = odd_runs != over_just_ended  # XOR: swap if exactly one is true
+
+    new_striker, new_non_striker = (non_striker, striker) if should_swap else (striker, non_striker)
+    update_live_state(innings, new_striker, new_non_striker, bowler)
+
     return delivery
 
 def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal):
@@ -123,15 +125,92 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         'total_sixes', 'overs_completed', 'is_completed', 'end_time'
     ])
 
-    # auto set next innings target when this innings completes
-    if just_completed and not target_chased:
-        next_innings = Innings.objects.filter(
-            match=innings.match, innings_number=innings.innings_number + 1
-        ).first()
-        if next_innings and not next_innings.target_runs:
+    if not just_completed:
+        return
+
+    match = innings.match
+    total_innings_expected = match.innings_count
+    next_innings = Innings.objects.filter(match=match, innings_number=innings.innings_number + 1).first()
+
+    if next_innings and not target_chased:
+        if not next_innings.target_runs:
             next_innings.target_runs = innings.total_score + 1
             next_innings.save(update_fields=['target_runs'])
+        return  
+    finalize_match_result(match)
+
+
+def finalize_match_result(match):
+    regulation = match.tournament.regulation
+    expected_innings = regulation.innings_per_match * 2 
+    innings_qs = Innings.objects.filter(match=match).order_by('innings_number')
+
+    if innings_qs.count() < expected_innings or not all(i.is_completed for i in innings_qs):
+        return
+    
+    first, second = innings_qs[0], innings_qs[1]
+    if first.total_score > second.total_score:
+        match.winner_team, match.runnerup_team, match.result_type = first.batting_team, second.batting_team, 'WIN'
+    elif second.total_score > first.total_score:
+        match.winner_team, match.runnerup_team, match.result_type = second.batting_team, first.batting_team, 'WIN'
+    else:
+        match.result_type = 'TIE'
+        match.winner_team = None
+        match.runnerup_team = None
+        # regulation.super_over_enabled would trigger Tier 3 super-over flow — not implemented yet
+
+    match.status = 'COMPLETED'
+    match.end_date = timezone.now()
+    match.save(update_fields=['winner_team', 'runnerup_team', 'result_type', 'status', 'end_date'])
+    update_standings(match)
             
+def calculate_nrr(tournament, team):
+    innings_for = Innings.objects.filter(
+        match__tournament=tournament, match__status='COMPLETED', batting_team=team
+    )
+    innings_against = Innings.objects.filter(
+        match__tournament=tournament, match__status='COMPLETED', fielding_team=team
+    )
+    runs_for = innings_for.aggregate(r=Sum('total_score'))['r'] or 0
+    overs_for = sum(float(i.overs_completed) for i in innings_for) or 0.001
+    runs_against = innings_against.aggregate(r=Sum('total_score'))['r'] or 0
+    overs_against = sum(float(i.overs_completed) for i in innings_against) or 0.001
+    return round((runs_for / overs_for) - (runs_against / overs_against), 3)
+
+@transaction.atomic
+def update_standings(match):
+    if match.status != 'COMPLETED' or match.result_type is None or match.standings_applied:
+        return
+
+    regulation = match.tournament.regulation
+    team_matches = match.team_matches.select_related('team').all()
+    for tm in team_matches:
+        standing, _ = TournamentStanding.objects.get_or_create(
+            tournament=match.tournament, team=tm.team,
+            defaults={'group': match.group}
+        )
+        standing.matches_played += 1
+        if match.result_type == 'TIE':
+            standing.matches_tied += 1
+            standing.points += regulation.points_for_tie
+        elif match.result_type == 'NO_RESULT':
+            standing.matches_no_result += 1
+            standing.points += regulation.points_for_no_result
+        elif match.result_type == 'ABANDONED':
+            standing.matches_no_result += 1
+            standing.points += regulation.points_for_no_result
+        elif match.winner_team_id == tm.team_id:
+            standing.matches_won += 1
+            standing.points += regulation.points_for_win
+        else:
+            standing.matches_lost += 1
+            standing.points += regulation.points_for_loss
+            
+        standing.net_run_rate = calculate_nrr(match.tournament, tm.team)
+        standing.save()
+    match.standings_applied = True
+    match.save(update_fields=['standings_applied'])
+
 
 def update_live_state(innings, striker, non_striker, bowler):
     MatchLiveState.objects.update_or_create(
@@ -143,7 +222,12 @@ def update_live_state(innings, striker, non_striker, bowler):
             'current_bowler': bowler,
         }
     )
-
+    
+#--------------------------------------------------------------------------
+    
+def calculate_overs(legal_ball_count):
+    return f"{legal_ball_count // 6}.{legal_ball_count % 6}"
+    
 @transaction.atomic
 def get_live_score(match):
     live_state = MatchLiveState.objects.select_related(
@@ -154,6 +238,7 @@ def get_live_score(match):
         'current_bowler'
     ).get(match=match)
     innings = live_state.current_innings
+    
     def batsman_stats(player, innings):
         stats = PlayerDelivery.objects.filter(
             player=player,
@@ -225,35 +310,3 @@ def get_live_score(match):
         'current_batsmen': [striker_data, non_striker_data],
         'current_bowler': bowler_data,
     }
-
-@transaction.atomic
-def update_standings(match):
-    if match.status != 'COMPLETED' or match.result_type is None or match.standings_applied:
-        return
-
-    regulation = match.tournament.regulation
-    team_matches = match.team_matches.select_related('team').all()
-    for tm in team_matches:
-        standing, _ = TournamentStanding.objects.get_or_create(
-            tournament=match.tournament, team=tm.team,
-            defaults={'group': match.group}
-        )
-        standing.matches_played += 1
-        if match.result_type == 'TIE':
-            standing.matches_tied += 1
-            standing.points += regulation.points_for_tie
-        elif match.result_type == 'NO_RESULT':
-            standing.matches_no_result += 1
-            standing.points += regulation.points_for_no_result
-        elif match.result_type == 'ABANDONED':
-            standing.matches_no_result += 1
-            standing.points += regulation.points_for_no_result
-        elif match.winner_team_id == tm.team_id:
-            standing.matches_won += 1
-            standing.points += regulation.points_for_win
-        else:
-            standing.matches_lost += 1
-            standing.points += regulation.points_for_loss
-        standing.save()
-    match.standings_applied = True
-    match.save(update_fields=['standings_applied'])
