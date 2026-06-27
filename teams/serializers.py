@@ -16,3 +16,6 @@ class TournamentSquadSerializer(serializers.ModelSerializer):
         model = TournamentSquad
         fields = '__all__'
         read_only_fields = ['squad_id', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'application': {'required': False, 'allow_null': True}
+        }
