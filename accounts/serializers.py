@@ -33,12 +33,12 @@ class UserSerializer(serializers.ModelSerializer):
                 ]
             }
         }
-        def validate_first_name(self, value):
-            return value.upper()
-        def validate_middle_name(self, value):
-            return value.upper() if value is not None else value
-        def validate_last_name(self, value):
-            return value.upper()
+    def validate_first_name(self, value):
+        return value.upper()
+    def validate_middle_name(self, value):
+        return value.upper() if value is not None else value
+    def validate_last_name(self, value):
+        return value.upper()
         
 
     def create(self, validated_data):
