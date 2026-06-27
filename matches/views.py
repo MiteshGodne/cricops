@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 # from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Match, Innings, MatchLiveState, TeamMatch, Delivery, PlayerDelivery
@@ -21,6 +21,33 @@ class InningsViewSet(viewsets.ModelViewSet):
 class TeamMatchViewSet(viewsets.ModelViewSet):
     queryset = TeamMatch.objects.select_related('match', 'team').all()
     serializer_class = TeamMatchSerializer
+    
+    @action(detail=False, methods=['post'], url_path='submit-toss')
+    def submit_toss(self, request):
+        match_id = request.data.get('match_id')
+        toss_winner_team_id = request.data.get('toss_winner_team_id')
+        toss_decision = request.data.get('toss_decision')
+
+        team_matches = TeamMatch.objects.filter(match_id=match_id).select_related('team')
+        if team_matches.count() != 2:
+            return Response({'error': 'Both teams not added to match'}, status=400)
+
+        winner_tm = team_matches.get(team_id=toss_winner_team_id)
+        loser_tm = team_matches.exclude(team_id=toss_winner_team_id).first()
+
+        winner_tm.is_toss_winner = True
+        winner_tm.toss_decision = toss_decision
+        winner_tm.save(update_fields=['is_toss_winner', 'toss_decision'])
+
+        batting_team = winner_tm.team if toss_decision == 'BAT' else loser_tm.team
+        fielding_team = loser_tm.team if toss_decision == 'BAT' else winner_tm.team
+
+        innings1, _ = Innings.objects.get_or_create(
+            match_id=match_id, innings_number=1,
+            defaults={'batting_team': batting_team, 'fielding_team': fielding_team}
+        )
+
+        return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
 
 class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Delivery.objects.select_related('innings', 'match').all()
