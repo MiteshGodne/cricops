@@ -10,11 +10,6 @@ def get_next_ball_sequence(innings):
     last = Delivery.objects.filter(innings=innings).order_by('-ball_sequence').first()
     return (last.ball_sequence + 1) if last else 1
 
-def sync_match_status(match):
-    if match.status == 'SCHEDULED' and match.start_date and timezone.now() >= match.start_date:
-        match.status = 'LIVE'
-        match.save(update_fields=['status'])
-
 def validate_playing_xi(innings, striker, non_striker, bowler):
     tournament = innings.match.tournament
     batting_squad_ids = set(TournamentSquad.objects.filter(
@@ -34,7 +29,6 @@ def process_delivery(validated_data):
     innings = Innings.objects.select_related('match', 'batting_team', 'fielding_team').get(
         innings_id=validated_data['innings_id']
     )
-    sync_match_status(innings.match)
     striker = Player.objects.get(player_id=validated_data['striker_id'])
     non_striker = Player.objects.get(player_id=validated_data['non_striker_id'])
     bowler = Player.objects.get(player_id=validated_data['bowler_id'])

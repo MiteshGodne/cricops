@@ -9,6 +9,16 @@ from .services import process_delivery, get_live_score, update_standings
 class MatchViewSet(viewsets.ModelViewSet):
     queryset = Match.objects.select_related('tournament', 'venue', 'winner_team', 'primary_umpire').all()
     serializer_class = MatchSerializer
+    @action(detail=True, methods=['post'], url_path='abandon')
+    def abandon(self, request, pk=None):
+        match = self.get_object()
+        match.status = 'ABANDONED'
+        match.result_type = 'ABANDONED'
+        match.result_note = request.data.get('reason', '')
+        match.save(update_fields=['status', 'result_type', 'result_note'])
+        match.standings_applied = False
+        update_standings(match)  
+        return Response({'status': 'match abandoned'})
 
 class InningsViewSet(viewsets.ModelViewSet):
     queryset = Innings.objects.select_related('match', 'batting_team', 'fielding_team').all()
@@ -41,6 +51,10 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
             match_id=match_id, innings_number=1,
             defaults={'batting_team': batting_team, 'fielding_team': fielding_team}
         )
+        match = team_matches.first().match
+        match.status = 'LIVE'
+        match.save(update_fields=['status'])
+        return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
         return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
 
 class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
