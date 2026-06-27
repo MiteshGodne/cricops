@@ -6,6 +6,10 @@ class RegulationSerializer(serializers.ModelSerializer):
         model = Regulation
         fields = '__all__'
         read_only_fields = ['regulation_id']
+    def validate(self, data):
+        instance = Regulation(**{**self.instance.__dict__, **data} if self.instance else data)
+        instance.clean()
+        return data
 
 class TournamentSerializer(serializers.ModelSerializer):
     class Meta:

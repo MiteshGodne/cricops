@@ -55,7 +55,11 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         tournament_id = request.data.get('tournament_id')
         registered_name = request.data.get('registered_name')
         registered_short_name = request.data.get('registered_short_name')
-        tournament = Tournament.objects.select_related('regulation').get(tournament_id=tournament_id)
+        try:
+            tournament = Tournament.objects.select_related('regulation').get(tournament_id=tournament_id)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Invalid tournament_id.'}, status=400)     
+           
         squad_qs = TournamentSquad.objects.filter(
             tournament_id=tournament_id, team_id=team_id, application__isnull=True
         )
