@@ -9,10 +9,6 @@ from .services import process_delivery, get_live_score, update_standings
 class MatchViewSet(viewsets.ModelViewSet):
     queryset = Match.objects.select_related('tournament', 'venue', 'winner_team', 'primary_umpire').all()
     serializer_class = MatchSerializer
-    def perform_update(self, serializer):
-        match = serializer.save()
-        if match.status == 'COMPLETED':
-            update_standings(match)
 
 class InningsViewSet(viewsets.ModelViewSet):
     queryset = Innings.objects.select_related('match', 'batting_team', 'fielding_team').all()
@@ -41,12 +37,10 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
 
         batting_team = winner_tm.team if toss_decision == 'BAT' else loser_tm.team
         fielding_team = loser_tm.team if toss_decision == 'BAT' else winner_tm.team
-
         innings1, _ = Innings.objects.get_or_create(
             match_id=match_id, innings_number=1,
             defaults={'batting_team': batting_team, 'fielding_team': fielding_team}
         )
-
         return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
 
 class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -74,7 +68,6 @@ def submit_delivery(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
 def live_score(request, match_id):
@@ -88,7 +81,7 @@ def live_score(request, match_id):
             {'error': 'Match is not live'},
             status=status.HTTP_400_BAD_REQUEST
         )
-
+        
     try:
         payload = get_live_score(match)
         serializer = LiveScoreSerializer(payload)
@@ -99,3 +92,15 @@ def live_score(request, match_id):
             status=status.HTTP_404_NOT_FOUND
         )
         
+@api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+def swap_striker(request, match_id):
+    try:
+        live_state = MatchLiveState.objects.get(match_id=match_id)
+    except MatchLiveState.DoesNotExist:
+        return Response({'error': 'Live state not found'}, status=404)
+    live_state.current_striker, live_state.current_non_striker = (
+        live_state.current_non_striker, live_state.current_striker
+    )
+    live_state.save(update_fields=['current_striker', 'current_non_striker'])
+    return Response({'striker': live_state.current_striker_id, 'non_striker': live_state.current_non_striker_id})
