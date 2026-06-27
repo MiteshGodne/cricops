@@ -86,4 +86,6 @@ class LiveScoreSerializer(serializers.Serializer):
     target_runs = serializers.IntegerField(allow_null=True)
     runs_required = serializers.IntegerField(allow_null=True)
     current_batsmen = LiveBatsmanSerializer(many=True)
-    current_bowler = LiveBowlerSerializer(allow_null=True)
+    current_bowler = LiveBowlerSerializer(allow_null=True)    
+    current_run_rate = serializers.FloatField()
+    required_run_rate = serializers.FloatField(allow_null=True)

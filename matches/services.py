@@ -288,13 +288,29 @@ def get_live_score(match):
             'wickets': stats['wickets'] or 0,
             'economy': round(runs / overs_float, 2) if overs_float > 0 else 0.0,
         }
-
     striker_data = {**batsman_stats(live_state.current_striker, innings), 'is_striker': True}
     non_striker_data = {**batsman_stats(live_state.current_non_striker, innings), 'is_striker': False}
     bowler_data = bowler_stats(live_state.current_bowler, innings)
+        
+    regulation = match.tournament.regulation
+
+    legal_balls = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
+    overs_faced = legal_balls / 6 if legal_balls else 0.0
+
+    # current run rate calculation
+    current_run_rate = round(innings.total_score / overs_faced, 2) if overs_faced > 0 else 0.0
+
     runs_required = None
+    required_run_rate = None
     if innings.target_runs:
         runs_required = innings.target_runs - innings.total_score
+        total_balls_allowed = (regulation.overs_per_innings or 0) * 6
+        remaining_balls = total_balls_allowed - legal_balls
+        # required run rate calculation
+        if remaining_balls > 0 and runs_required > 0:
+            required_run_rate = round(runs_required / (remaining_balls / 6), 2)
+        else:
+            required_run_rate = 0.0
     return {
         'match_id': match.match_id,
         'match_status': match.status,
@@ -307,6 +323,8 @@ def get_live_score(match):
         'total_extras': innings.total_extras,
         'target_runs': innings.target_runs,
         'runs_required': runs_required,
+        'current_run_rate': current_run_rate,
+        'required_run_rate': required_run_rate,
         'current_batsmen': [striker_data, non_striker_data],
         'current_bowler': bowler_data,
     }
