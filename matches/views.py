@@ -3,12 +3,14 @@ from rest_framework.decorators import api_view, permission_classes, action
 # from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Match, Innings, MatchLiveState, TeamMatch, Delivery, PlayerDelivery
+from tournaments.models import Application
 from .serializers import MatchSerializer, InningsSerializer, DeliveryInputSerializer, LiveScoreSerializer, TeamMatchSerializer, DeliverySerializer, PlayerDeliverySerializer
 from .services import process_delivery, get_live_score, update_standings
 
 class MatchViewSet(viewsets.ModelViewSet):
     queryset = Match.objects.select_related('tournament', 'venue', 'winner_team', 'primary_umpire').all()
     serializer_class = MatchSerializer
+    
     @action(detail=True, methods=['post'], url_path='abandon')
     def abandon(self, request, pk=None):
         match = self.get_object()
@@ -27,6 +29,17 @@ class InningsViewSet(viewsets.ModelViewSet):
 class TeamMatchViewSet(viewsets.ModelViewSet):
     queryset = TeamMatch.objects.select_related('match', 'team').all()
     serializer_class = TeamMatchSerializer
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        match = serializer.validated_data['match']
+        team = serializer.validated_data['team']
+        accepted = Application.objects.filter(tournament=match.tournament, team=team, status='ACCEPTED').exists()
+        if not accepted:
+            return Response({'error': 'Team application not ACCEPTED for this tournament.'}, status=400)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=201)
     
     @action(detail=False, methods=['post'], url_path='submit-toss')
     def submit_toss(self, request):
@@ -54,7 +67,6 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
         match = team_matches.first().match
         match.status = 'LIVE'
         match.save(update_fields=['status'])
-        return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
         return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
 
 class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
