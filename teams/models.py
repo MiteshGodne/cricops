@@ -8,8 +8,8 @@ class Team(models.Model):
     team_name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=10) 
     logo = models.ImageField(upload_to='team_logos/', blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
     contact_email = models.EmailField(blank=True, null=True)  
     coach_name = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -35,7 +35,7 @@ class SquadRole(models.TextChoices):
 
 class TournamentSquad(models.Model):
     squad_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    application = models.ForeignKey('tournaments.Application', on_delete=models.CASCADE, related_name='squad_entries')
+    application = models.ForeignKey('tournaments.Application', on_delete=models.CASCADE, related_name='squad_entries', null=True, blank=True)
     tournament = models.ForeignKey('tournaments.Tournament', on_delete=models.CASCADE, related_name='squad_entries')
     team = models.ForeignKey('teams.Team', on_delete=models.CASCADE, related_name='tournament_squads')
     player = models.ForeignKey('players.Player', on_delete=models.CASCADE, related_name='squad_entries')
