@@ -57,10 +57,9 @@ def process_delivery(validated_data):
         PlayerDelivery(delivery=delivery, player=bowler, performance_role='BOWLER', runs_attributed=runs + extra_runs),
     ]
     
-    if wicket_type != 'NONE':
-        dismissed_id = dismissed_player_id or striker.player_id
+    dismissed_id = (dismissed_player_id or striker.player_id) if wicket_type != 'NONE' else None
     for pd in player_deliveries:
-        if pd.player_id == dismissed_id:
+        if dismissed_id and pd.player_id == dismissed_id:
             pd.dismissal_info = f"{wicket_type}"
     
     if wicket_type in ['CAUGHT', 'STUMPED'] and fielder_id:

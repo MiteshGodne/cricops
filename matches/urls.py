@@ -3,11 +3,11 @@ from rest_framework.routers import DefaultRouter
 from .views import MatchViewSet, InningsViewSet, TeamMatchViewSet, DeliveryViewSet, PlayerDeliveryViewSet, submit_delivery, live_score, swap_striker
 
 router = DefaultRouter()
-router.register('', MatchViewSet, basename='match')
 router.register('innings', InningsViewSet, basename='innings')
 router.register('team-matches', TeamMatchViewSet, basename='team-match')
 router.register('deliveries-list', DeliveryViewSet, basename='delivery')
 router.register('player-deliveries', PlayerDeliveryViewSet, basename='player-delivery')
+router.register('matches', MatchViewSet, basename='match')
 
 urlpatterns = [
     path('', include(router.urls)),
