@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from django.db import IntegrityError
 from django.utils import timezone
@@ -8,13 +8,15 @@ from .serializers import TeamSerializer, TournamentSquadSerializer
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.select_related('team_head').all()
     serializer_class = TeamSerializer
+    permission_classes = [permissions.AllowAny]
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, team_head=self.request.user)
+    
 
 class TournamentSquadViewSet(viewsets.ModelViewSet):
     queryset = TournamentSquad.objects.select_related('player', 'team', 'tournament').all()
     serializer_class = TournamentSquadSerializer
-    
+    permission_classes = [permissions.AllowAny]
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -23,12 +25,10 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
         tournament = serializer.validated_data['tournament']
         is_playing_xi = serializer.validated_data.get('is_playing_xi', True)
         squad_role = serializer.validated_data.get('squad_role', 'PLAYER')
-
         if tournament.status != 'ACCEPTING_APPLICATIONS' or (
             tournament.application_deadline and tournament.application_deadline < timezone.now()
         ):
             return Response({'error': 'Tournament is not accepting squad entries.'}, status=400)
-
         if player.current_team_id != team.team_id:
             return Response({'error': 'Player does not belong to this team.'}, status=400)
 
