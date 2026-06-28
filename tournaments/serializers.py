@@ -7,7 +7,11 @@ class RegulationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['regulation_id']
     def validate(self, data):
-        instance = Regulation(**{**self.instance.__dict__, **data} if self.instance else data)
+        instance_data = {
+            k: v for k, v in self.instance.__dict__.items()
+            if not k.startswith('_')
+        } if self.instance else {}
+        instance = Regulation(**{**instance_data, **data})
         instance.clean()
         return data
 

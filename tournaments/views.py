@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from .models import Regulation, Tournament, Application, Group, TournamentStanding, TournamentOrganizer
 from .serializers import RegulationSerializer, TournamentSerializer, ApplicationSerializer, GroupSerializer, TournamentStandingSerializer, TournamentOrganizerSerializer
 from django.utils import timezone
@@ -10,10 +10,12 @@ from django.db import IntegrityError
 class RegulationViewSet(viewsets.ModelViewSet):
     queryset = Regulation.objects.all()
     serializer_class = RegulationSerializer
+    permission_classes = [permissions.AllowAny]
 
 class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.select_related('regulation', 'created_by').all()
     serializer_class = TournamentSerializer
+    permission_classes = [permissions.AllowAny]
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
     def get_queryset(self):
@@ -25,7 +27,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
 class TournamentOrganizerViewSet(viewsets.ModelViewSet):
     queryset = TournamentOrganizer.objects.select_related('tournament', 'user').all()
     serializer_class = TournamentOrganizerSerializer
-    
+    permission_classes = [permissions.AllowAny]
     @action(detail=False, methods=['get'], url_path='open')
     def open_tournaments(self, request):
         qs = Tournament.objects.filter(
@@ -37,6 +39,7 @@ class TournamentOrganizerViewSet(viewsets.ModelViewSet):
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.select_related('team', 'tournament').all()
     serializer_class = ApplicationSerializer
+    permission_classes = [permissions.AllowAny]
     def perform_update(self, serializer):
         old_status = serializer.instance.status
         if 'status' in serializer.validated_data:
@@ -87,8 +90,9 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 error = 'Could not create application.'
             return Response({'error': error}, status=400)
         
+        count = squad_qs.count()         
         squad_qs.update(application=application)
-        return Response({'application_id': application.application_id, 'players_linked': squad_qs.count()}, status=201)
+        return Response({'application_id': application.application_id, 'players_linked': count}, status=201)
     
     @action(detail=True, methods=['post'], url_path='reapply')
     def reapply(self, request, pk=None):
@@ -109,7 +113,9 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.select_related('tournament').all()
     serializer_class = GroupSerializer
+    permission_classes = [permissions.AllowAny]
 
 class TournamentStandingViewSet(viewsets.ModelViewSet):
     queryset = TournamentStanding.objects.select_related('tournament', 'team', 'group').all()
     serializer_class = TournamentStandingSerializer
+    permission_classes = [permissions.AllowAny]
