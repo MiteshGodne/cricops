@@ -51,6 +51,12 @@ class User(AbstractUser):
     
     class Meta:
         db_table = 'users'
+        constraints = [
+        models.CheckConstraint(
+            condition=models.Q(role__in=['ORGANIZER', 'TEAMHEAD', 'UMPIRE', 'VIEWER']),
+            name='valid_user_role'
+        )
+        ]
         
     def __str__(self):
         return f"{self.email} ({self.role})"
