@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-
+from .models import UserRole 
 User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -39,7 +39,18 @@ class UserSerializer(serializers.ModelSerializer):
         return value.upper() if value is not None else value
     def validate_last_name(self, value):
         return value.upper()
-        
-
     def create(self, validated_data):
         return User.objects.create_user(**validated_data) # >> Use your custom UserManager
+    
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['user_id','email','first_name','middle_name','last_name','password','phone','apply_for','role','avatar_url','is_email_verified','date_joined']
+        read_only_fields = ['user_id','role','is_email_verified','date_joined']
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        apply_for = validated_data.get('apply_for')
+        role = UserRole.TEAMHEAD if apply_for == 'TEAMHEAD' else UserRole.PENDING
+        validated_data['role'] = role
+        return User.objects.create_user(**validated_data)
