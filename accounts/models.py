@@ -39,7 +39,7 @@ class ApplyFor(models.TextChoices):
 class User(AbstractUser):
     username = None
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    apply_for = models.CharField(max_length=20, choices=ApplyFor.choices)
+    apply_for = models.CharField(max_length=20, choices=ApplyFor.choices, default=ApplyFor.TEAMHEAD, null=True, blank=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, unique=True)
     middle_name = models.CharField(max_length=15, blank=True, null=True)
