@@ -5,4 +5,4 @@ class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
         fields = '__all__'
-        read_only_fields = ['venue_id', 'created_at']
+        read_only_fields = ['venue_id', 'created_at', 'created_by']
