@@ -1,47 +1,51 @@
 from rest_framework.permissions import BasePermission
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
-
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
+    
 class IsOrganizer(BasePermission):
-    # Grants access only to ORGANIZER
-    def has_permission(self, request, view, obj):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'ORGANIZER')
+    
+class IsTeamHead(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'TEAMHEAD')
+
+class IsOrganizerOwner(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'ORGANIZER')
+    def has_object_permission(self, request, view, obj):
         if hasattr(obj, 'created_by'):
             return obj.created_by == request.user
         if hasattr(obj, 'tournament'):
             return obj.tournament.created_by == request.user
         return False
-
-class IsOrganizerOwner(BasePermission):
-    # Only organizer's own tournaments can be modified
+    
+class IsTeamHeadOwner(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'TEAMHEAD')
+    def has_object_permission(self, request, view, obj):
+        return obj.team_head == request.user
+    
+class IsMatchOrganizerOwner(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'ORGANIZER'
+    def has_object_permission(self, request, view, obj):
+        return obj.tournament.created_by == request.user
+    
+class IsCreatorOwner(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated 
     def has_object_permission(self, request, view, obj):
         return obj.created_by == request.user
 
-class IsTeamHead(BasePermission):
-    # Grants access only to TEAMHEAD
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.role == 'TEAMHEAD')
-    
-class IsTeamHeadOwner(BasePermission):
-    # Only teamhead's own team can be modified 
-    def has_object_permission(self, request, view, obj):
-        return obj.team_head == request.user or obj.created_by == request.user
-
-class IsAssignedUmpire(BasePermission):
-    # Umpire can only submit deliveries for their assigned match
-    def has_object_permission(self, request, view, obj):
-        return (request.user.role == 'UMPIRE' and obj.primary_umpire == request.user)
-        
 class IsOwnTeamHead(BasePermission):
-    # Prevents a teamhead from modifying another team's squad
     def has_object_permission(self, request, view, obj):
         return obj.team.team_head == request.user or obj.team.created_by == request.user
 
 class IsPendingUmpire(BasePermission):
-    # Used in assign_umpire to verify target user applied as umpire
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == 'ORGANIZER'
     
 class IsUmpireForMatch(BasePermission):
-    # Grants permission for delivery update to the innings' match's primary_umpire
     def has_permission(self, request, view):
         if not request.user.is_authenticated or request.user.role != 'UMPIRE':
             return False
@@ -54,7 +58,39 @@ class IsUmpireForMatch(BasePermission):
             return innings.match.primary_umpire == request.user
         except Innings.DoesNotExist:
             return False
+    def has_object_permission(self, request, view, obj):
+        return (request.user.role == 'UMPIRE' and obj.primary_umpire == request.user)
 
+class IsUmpireForMatchFromURL(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated or request.user.role != 'UMPIRE':
+            return False
+        match_id = view.kwargs.get('match_id')
+        if not match_id:
+            return False
+        from matches.models import Match
+        try:
+            match = Match.objects.get(match_id=match_id)
+            return match.primary_umpire == request.user
+        except Match.DoesNotExist:
+            return False
+        
+class IsPlayerTeamHeadOwner(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'TEAMHEAD'
+    def has_object_permission(self, request, view, obj):
+        if obj.current_team is None:
+            return False
+        return obj.current_team.team_head == request.user
+
+class IsGroupTournamentOwner(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'ORGANIZER'
+    def has_object_permission(self, request, view, obj):
+        if obj.tournament is None:
+            return False
+        return obj.tournament.created_by == request.user
+    
 class ReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in ('GET', 'HEAD', 'OPTIONS')
