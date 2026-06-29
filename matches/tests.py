@@ -812,3 +812,49 @@ class FullMatchStandingsSyncTest(TestCase):
         from tournaments.models import TournamentStanding
         self.assertEqual(TournamentStanding.objects.filter(tournament=self.tournament).count(), 0)
         # no team_matches linkage check needed; abandon path applies update_standings but team_matches exist
+        
+class AssignUmpireBugFixTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.organizer = make_user(role="ORGANIZER")
+        self.client.force_authenticate(user=self.organizer)
+        self.tournament = make_tournament()
+        self.tournament.created_by = self.organizer
+        self.tournament.save()
+        self.match = make_match(tournament=self.tournament)
+
+    def test_assign_umpire_rejects_already_approved(self):
+        from accounts.models import User
+        u = User.objects.create_user(email="u@x.com", password="Pass@1234",
+            first_name="A", last_name="B", phone="1112223333", apply_for="UMPIRE", role="UMPIRE")
+        res = self.client.post(f"/api/matches/matches/{self.match.match_id}/assign-umpire/",
+            {"user_id": str(u.user_id)}, format="json")
+        self.assertEqual(res.status_code, 400)  # already approved, should be rejected now
+
+    def test_assign_umpire_accepts_pending_applicant(self):
+        from accounts.models import User
+        u = User.objects.create_user(email="u2@x.com", password="Pass@1234",
+            first_name="A", last_name="B", phone="4445556666", apply_for="UMPIRE", role="PENDING")
+        res = self.client.post(f"/api/matches/matches/{self.match.match_id}/assign-umpire/",
+            {"user_id": str(u.user_id)}, format="json")
+        self.assertEqual(res.status_code, 200)
+        u.refresh_from_db()
+        self.assertEqual(u.role, "UMPIRE")
+
+    def test_match_update_permission_object_check_no_crash(self):
+        # Bug B: previously crashed with AttributeError on Tournament object
+        res = self.client.patch(f"/api/matches/matches/{self.match.match_id}/",
+            {"status": "LIVE"}, format="json")
+        self.assertIn(res.status_code, [200, 403])  # should not 500
+
+    def test_assign_umpire_action_dispatches_correctly(self):
+        # Bug A: action tuple syntax — ensure permission class actually applies
+        other_organizer = make_user(role="ORGANIZER")
+        client2 = APIClient()
+        client2.force_authenticate(user=other_organizer)
+        from accounts.models import User
+        u = User.objects.create_user(email="u3@x.com", password="Pass@1234",
+            first_name="A", last_name="B", phone="7778889999", apply_for="UMPIRE", role="PENDING")
+        res = client2.post(f"/api/matches/matches/{self.match.match_id}/assign-umpire/",
+            {"user_id": str(u.user_id)}, format="json")
+        self.assertEqual(res.status_code, 403)  # not the tournament owner

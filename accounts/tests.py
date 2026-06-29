@@ -120,3 +120,54 @@ class UserModelTest(TestCase):
         payload.pop("middle_name", None)
         res = self.client.post("/api/accounts/users/", payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+
+# --- accounts/tests.py additions ---
+class ApprovalFlowTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create_superuser(email="admin2@x.com", password="Admin@1234")
+        self.client.force_authenticate(user=self.admin)
+
+    def make_pending(self, apply_for):
+        return User.objects.create_user(
+            email=f"{apply_for.lower()}@x.com", password="Pass@1234",
+            first_name="A", last_name="B", phone="9990001111",
+            apply_for=apply_for, role="PENDING"
+        )
+
+    def test_approve_organizer_success(self):
+        u = self.make_pending("ORGANIZER")
+        res = self.client.post(f"/api/accounts/users/{u.user_id}/approve-organizer/", {}, format="json")
+        self.assertEqual(res.status_code, 200)
+        u.refresh_from_db()
+        self.assertEqual(u.role, "ORGANIZER")
+
+    def test_approve_organizer_wrong_apply_for_rejected(self):
+        u = self.make_pending("UMPIRE")
+        res = self.client.post(f"/api/accounts/users/{u.user_id}/approve-organizer/", {}, format="json")
+        self.assertEqual(res.status_code, 400)
+
+    def test_reject_pending_user(self):
+        u = self.make_pending("ORGANIZER")
+        res = self.client.post(f"/api/accounts/users/{u.user_id}/reject/", {}, format="json")
+        self.assertEqual(res.status_code, 200)
+        u.refresh_from_db()
+        self.assertEqual(u.role, "REJECTED")
+
+    def test_non_admin_cannot_approve(self):
+        normal = User.objects.create_user(email="n@x.com", password="Pass@1234",
+            first_name="A", last_name="B", phone="2223334444")
+        self.client.force_authenticate(user=normal)
+        u = self.make_pending("ORGANIZER")
+        res = self.client.post(f"/api/accounts/users/{u.user_id}/approve-organizer/", {}, format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_pending_user_blocked_from_organizer_actions(self):
+        u = self.make_pending("ORGANIZER")
+        self.client.force_authenticate(user=u)
+        res = self.client.post("/api/tournaments/regulations/", {
+            "match_format": "T20", "overs_per_innings": 20,
+            "players_per_side": 11, "tournament_format": "LEAGUE",
+        }, format="json")
+        self.assertEqual(res.status_code, 403)  # still PENDING, IsOrganizer blocks
