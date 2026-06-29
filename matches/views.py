@@ -16,14 +16,14 @@ class MatchViewSet(viewsets.ModelViewSet):
             return [ReadOnly()]
         if self.action in ('update', 'partial_update', 'destroy', 'abandon'):
             return  [IsOrganizer(), IsMatchOrganizerOwner()]
-        if self.action in ('assign_umpire'):
+        if self.action in ('assign_umpire',):
             return  [IsOrganizer(), IsMatchOrganizerOwner()]
         return [IsOrganizer()] 
 
     def get_object(self):
         obj = super().get_object()
         if self.request.method not in ('GET', 'HEAD', 'OPTIONS'):
-            self.check_object_permissions(self.request, obj.tournament)
+            self.check_object_permissions(self.request, obj)
         return obj
     
     @action(detail=True, methods=['post'], url_path='abandon', permission_classes=[IsOrganizer, IsMatchOrganizerOwner])
@@ -43,7 +43,7 @@ class MatchViewSet(viewsets.ModelViewSet):
         user_id = request.data.get('user_id')
         try:
             from accounts.models import User
-            umpire = User.objects.get(user_id=user_id, apply_for='UMPIRE')
+            umpire = User.objects.get(user_id=user_id, apply_for='UMPIRE', role='PENDING')
         except User.DoesNotExist:
             return Response({'error': 'No umpire applicant with that user_id.'}, status=400)
         match.primary_umpire = umpire
@@ -193,3 +193,16 @@ def swap_striker(request, match_id):
     )
     live_state.save(update_fields=['current_striker', 'current_non_striker'])
     return Response({'striker': live_state.current_striker_id, 'non_striker': live_state.current_non_striker_id})
+
+@api_view(['POST'])
+@permission_classes([IsOrganizer])
+def approve_umpire(request):
+    user_id = request.data.get('user_id')
+    try:
+        from accounts.models import User
+        umpire = User.objects.get(user_id=user_id, apply_for='UMPIRE', role='PENDING')
+    except User.DoesNotExist:
+        return Response({'error': 'No pending umpire applicant with that user_id.'}, status=400)
+    umpire.role = 'UMPIRE'
+    umpire.save(update_fields=['role'])
+    return Response({'approved': str(umpire.user_id), 'role': umpire.role})

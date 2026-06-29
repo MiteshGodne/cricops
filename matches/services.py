@@ -41,7 +41,6 @@ def process_delivery(validated_data):
     ball_sequence = get_next_ball_sequence(innings)
     is_legal = extra_type not in ['WIDE', 'NO_BALL']
 
-    # validate playing XI - see section 6 below
     validate_playing_xi(innings, striker, non_striker, bowler)
 
     legal_count_before = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
@@ -77,7 +76,7 @@ def process_delivery(validated_data):
     legal_count_after = legal_count_before + (1 if is_legal else 0)
     odd_runs = is_legal and (runs % 2 == 1) and extra_type == 'NONE'
     over_just_ended = is_legal and legal_count_after % 6 == 0
-    should_swap = odd_runs != over_just_ended  # XOR: swap if exactly one is true
+    should_swap = odd_runs != over_just_ended  
 
     new_striker, new_non_striker = (non_striker, striker) if should_swap else (striker, non_striker)
     update_live_state(innings, new_striker, new_non_striker, bowler)
