@@ -40,10 +40,6 @@ class IsCreatorOwner(BasePermission):
 class IsOwnTeamHead(BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.team.team_head == request.user or obj.team.created_by == request.user
-
-class IsPendingUmpire(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'ORGANIZER'
     
 class IsUmpireForMatch(BasePermission):
     def has_permission(self, request, view):
