@@ -1,7 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-# defining enums for few fields
 class MatchFormat(models.TextChoices):
     T20 = 'T20', 'T20'
     ODI = 'ODI', 'ODI'
@@ -25,6 +24,7 @@ class TournamentFormat(models.TextChoices):
 
 class Regulation(models.Model):
     regulation_id = models.AutoField(primary_key=True)
+    created_by = models.ForeignKey("accounts.User", verbose_name="created_by", on_delete=models.CASCADE, related_name="regulator")
 
     ''' Match rules '''
     match_format = models.CharField(max_length=10, choices=MatchFormat.choices, default=MatchFormat.T20)
@@ -58,6 +58,7 @@ class Regulation(models.Model):
     tiebreaker_order = models.JSONField(default=list, blank=True)
     over_rate_penalty_enabled = models.BooleanField(default=False)
     over_rate_penalty_points = models.SmallIntegerField(default=0)
+    
 
     class Meta:
         db_table = 'regulations'

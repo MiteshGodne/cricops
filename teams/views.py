@@ -4,11 +4,19 @@ from django.db import IntegrityError
 from django.utils import timezone
 from .models import Team, TournamentSquad
 from .serializers import TeamSerializer, TournamentSquadSerializer
+from core.permissions import ReadOnly, IsTeamHead, IsOrganizerOwner, IsTeamHeadOwner, IsOwnTeamHead
 
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.select_related('team_head').all()
     serializer_class = TeamSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        if self.action in ('upadate','partial_update','destroy'):
+            return [IsTeamHeadOwner()]
+        return [IsTeamHead()]  
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, team_head=self.request.user)
     
@@ -16,7 +24,14 @@ class TeamViewSet(viewsets.ModelViewSet):
 class TournamentSquadViewSet(viewsets.ModelViewSet):
     queryset = TournamentSquad.objects.select_related('player', 'team', 'tournament').all()
     serializer_class = TournamentSquadSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return [IsOwnTeamHead(), IsOrganizerOwner()]
+        return [IsTeamHead()]
+    
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -24,13 +39,15 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
         team = serializer.validated_data['team']
         tournament = serializer.validated_data['tournament']
         is_playing_xi = serializer.validated_data.get('is_playing_xi', True)
-        squad_role = serializer.validated_data.get('squad_role', 'PLAYER')
+        
         if tournament.status != 'ACCEPTING_APPLICATIONS' or (
             tournament.application_deadline and tournament.application_deadline < timezone.now()
         ):
             return Response({'error': 'Tournament is not accepting squad entries.'}, status=400)
         if player.current_team_id != team.team_id:
             return Response({'error': 'Player does not belong to this team.'}, status=400)
+        if team.team_head != request.user and team.created_by != request.user:
+            return Response({'error': 'You do not own this team.'}, status=403)
 
         if is_playing_xi:
             xi_count = TournamentSquad.objects.filter(

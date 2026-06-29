@@ -4,7 +4,7 @@ from django.db import models
 class Team(models.Model):
     team_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     team_head = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='teams_headed')
-    created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_teams')
+    created_by = models.ForeignKey('accounts.User', verbose_name="created_by",on_delete=models.SET_NULL, null=True, blank=True, related_name='created_teams')
     team_name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=10) 
     logo = models.ImageField(upload_to='team_logos/', blank=True, null=True)

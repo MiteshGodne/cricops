@@ -29,6 +29,5 @@ class Player(models.Model):
             models.Index(fields=['is_active']),
         ]
 
-
     def __str__(self):
         return f"{self.full_name} ({self.player_role})"

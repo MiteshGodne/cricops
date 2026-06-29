@@ -3,7 +3,7 @@ from .models import Regulation, Tournament, TournamentOrganizer, Application, To
 
 @admin.register(Regulation)
 class RegulationAdmin(admin.ModelAdmin):
-    list_display = ['regulation_id', 'tournament_format','match_format', 'innings_per_team', 'overs_per_innings',  'points_for_win']
+    list_display = ['regulation_id', 'created_by', 'tournament_format','match_format', 'innings_per_team', 'overs_per_innings',  'points_for_win']
     list_filter = ['tournament_format', 'match_format']
     
 @admin.register(Tournament)
@@ -24,7 +24,7 @@ class TournamentOrganizerAdmin(admin.ModelAdmin):
 
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):
-    list_display = ['team', 'tournament', 'status', 'created_at']
+    list_display = ['team', 'tournament', 'status', 'processed_by' , 'created_at']
     list_filter = ['status']
     search_fields = ['team__team_name', 'tournament__name']
     ordering = ['-created_at']

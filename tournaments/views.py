@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from .models import Regulation, Tournament, Application, Group, TournamentStanding, TournamentOrganizer
 from .serializers import RegulationSerializer, TournamentSerializer, ApplicationSerializer, GroupSerializer, TournamentStandingSerializer, TournamentOrganizerSerializer
 from django.utils import timezone
@@ -6,18 +6,36 @@ from teams.models import TournamentSquad
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import IntegrityError
+from core.permissions import IsOrganizer, IsCreatorOwner, ReadOnly, IsOrganizerOwner, IsTeamHead, IsGroupTournamentOwner
 
 class RegulationViewSet(viewsets.ModelViewSet):
-    queryset = Regulation.objects.all()
+    queryset = Regulation.objects.select_related('created_by').all()
     serializer_class = RegulationSerializer
-    permission_classes = [permissions.AllowAny]
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return [IsOrganizer(), IsCreatorOwner()]
+        return [IsOrganizer()]
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+    
 
 class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.select_related('regulation', 'created_by').all()
     serializer_class = TournamentSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return [IsOrganizer(), IsOrganizerOwner()]
+        return [IsOrganizer()] 
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+        
     def get_queryset(self):
         qs = super().get_queryset()
         for t in qs.filter(status='ACCEPTING_APPLICATIONS'):
@@ -27,7 +45,12 @@ class TournamentViewSet(viewsets.ModelViewSet):
 class TournamentOrganizerViewSet(viewsets.ModelViewSet):
     queryset = TournamentOrganizer.objects.select_related('tournament', 'user').all()
     serializer_class = TournamentOrganizerSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        return [IsOrganizer()]
+    
     @action(detail=False, methods=['get'], url_path='open')
     def open_tournaments(self, request):
         qs = Tournament.objects.filter(
@@ -39,18 +62,26 @@ class TournamentOrganizerViewSet(viewsets.ModelViewSet):
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.select_related('team', 'tournament').all()
     serializer_class = ApplicationSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [ReadOnly()]
+        if self.action in ['upadate','partial_update']:
+            return [IsOrganizer()]
+        if self.action in ['submit_application']:
+            return [IsTeamHead()]
+        if self.action in ['reapply']:
+            return [IsTeamHead()]
+        return [IsOrganizer()]
+    
     def perform_update(self, serializer):
         old_status = serializer.instance.status
         if 'status' in serializer.validated_data:
             app = serializer.save(processed_at=timezone.now())
         else:
             app = serializer.save()
-
         if old_status != 'ACCEPTED' and app.status == 'ACCEPTED':
-            TournamentStanding.objects.get_or_create(
-                tournament=app.tournament, team=app.team
-            )
+            TournamentStanding.objects.get_or_create(tournament=app.tournament, team=app.team)
             
     @action(detail=False, methods=['post'], url_path='submit-application')
     def submit_application(self, request):
@@ -72,7 +103,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 {'error': f'At least {min_required} players required, found {squad_qs.count()}'},
                 status=400
             )
-
         try:
             application = Application.objects.create(
                 team_id=team_id, tournament_id=tournament_id,
@@ -113,9 +143,15 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.select_related('tournament').all()
     serializer_class = GroupSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return [IsOrganizer(), IsGroupTournamentOwner()]
+        return [IsOrganizer()]
 
 class TournamentStandingViewSet(viewsets.ModelViewSet):
     queryset = TournamentStanding.objects.select_related('tournament', 'team', 'group').all()
     serializer_class = TournamentStandingSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [ReadOnly]

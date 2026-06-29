@@ -14,7 +14,7 @@ class Venue(models.Model):
     gps_longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
-    created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL,null=True, blank=True,related_name='created_venues')
+    created_by = models.ForeignKey('accounts.User', verbose_name="created_by", on_delete=models.SET_NULL,null=True, blank=True,related_name='created_venue')
     class Meta:
         db_table = 'venues'
         ordering = ['name']

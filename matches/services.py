@@ -162,6 +162,9 @@ def finalize_match_result(match):
     match.status = 'COMPLETED'
     match.end_date = timezone.now()
     match.save(update_fields=['winner_team', 'runnerup_team', 'result_type', 'status', 'end_date'])
+    if match.primary_umpire:
+        match.primary_umpire.role = "PENDING"
+        match.primary_umpire.save(update_fields = ['role'])
     update_standings(match)
             
 def calculate_nrr(tournament, team):

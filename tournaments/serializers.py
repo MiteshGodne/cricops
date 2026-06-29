@@ -5,7 +5,7 @@ class RegulationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Regulation
         fields = '__all__'
-        read_only_fields = ['regulation_id']
+        read_only_fields = ['regulation_id', 'created_by']
     def validate(self, data):
         instance_data = {
             k: v for k, v in self.instance.__dict__.items()
