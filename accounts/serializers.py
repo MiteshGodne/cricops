@@ -48,6 +48,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         read_only_fields = ['user_id','role','is_email_verified','date_joined']
         extra_kwargs = {'password': {'write_only': True}}
 
+    def validate(self, attrs):
+        role = self.initial_data.get('role')
+        if role and role not in UserRole.values:
+            raise serializers.ValidationError({"role": f"'{role}' is not a valid choice."})
+        return attrs
+    
     def create(self, validated_data):
         apply_for = validated_data.get('apply_for')
         role = UserRole.TEAMHEAD if apply_for == 'TEAMHEAD' else UserRole.PENDING

@@ -14,6 +14,11 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
     
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+    
     @action(detail=True, methods=['post'], url_path='approve-organizer', permission_classes=[permissions.IsAdminUser])
     def approve_organizer(self, request, pk=None):
         user = self.get_object()
