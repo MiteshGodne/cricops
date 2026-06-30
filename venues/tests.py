@@ -1,5 +1,4 @@
 from django.test import TestCase
-from django.core.exceptions import ValidationError
 from rest_framework.test import APIClient
 from rest_framework import status
 from accounts.models import User
@@ -12,6 +11,17 @@ from venues.models import Venue
 class VenueModelTest(TestCase):
     def setUp(self):
         self.client = APIClient()
+        
+        # FIX: Create an Organizer user to satisfy IsOrganizer permission requirements
+        self.organizer = User.objects.create_user(
+            email="organizer@example.com",
+            password="Organizer@1234",
+            first_name="Organizer",
+            last_name="User",
+            phone="9876543211",
+            role="ORGANIZER"
+        )
+        
         self.valid_payload = {
             "name": "Wankhede Stadium",
             "address_line": "D Rd, Churchgate",
@@ -48,12 +58,16 @@ class VenueModelTest(TestCase):
 
     # API tests
     def test_api_create_venue(self):
+        # FIX: Authenticate client as the organizer
+        self.client.force_authenticate(user=self.organizer)
         res = self.client.post("/api/venues/", self.valid_payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data["name"], "Wankhede Stadium")
         self.assertIn("venue_id", res.data)
 
     def test_api_create_venue_missing_required(self):
+        # FIX: Authenticate client as the organizer
+        self.client.force_authenticate(user=self.organizer)
         payload = {"name": "No Address"}  # missing address_line & city
         res = self.client.post("/api/venues/", payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
@@ -71,13 +85,17 @@ class VenueModelTest(TestCase):
         self.assertEqual(res.data["city"], "Mumbai")
 
     def test_api_update_venue(self):
-        v = Venue.objects.create(**self.valid_payload)
+        # FIX: Explicitly pass created_by to pass the IsCreatorOwner check
+        v = Venue.objects.create(created_by=self.organizer, **self.valid_payload)
+        self.client.force_authenticate(user=self.organizer)
         res = self.client.patch(f"/api/venues/{v.venue_id}/", {"city": "Pune"}, format="json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["city"], "Pune")
 
     def test_api_delete_venue(self):
-        v = Venue.objects.create(**self.valid_payload)
+        # FIX: Explicitly pass created_by to pass the IsCreatorOwner check
+        v = Venue.objects.create(created_by=self.organizer, **self.valid_payload)
+        self.client.force_authenticate(user=self.organizer)
         res = self.client.delete(f"/api/venues/{v.venue_id}/")
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Venue.objects.filter(venue_id=v.venue_id).exists())

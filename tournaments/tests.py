@@ -1,4 +1,5 @@
 import uuid
+import random
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -21,9 +22,11 @@ from tournaments.models import (
 def make_user(email=None, role="ORGANIZER"):
     if email is None:
         email = f"user_{uuid.uuid4().hex[:8]}@x.com"
+    # FIX: Dynamically generate unique 10-digit phone number
+    unique_phone = str(random.randint(1000000000, 9999999999))
     return User.objects.create_user(
         email=email, password="Pass@1234",
-        first_name="A", last_name="B", phone="9999999999", role=role
+        first_name="A", last_name="B", phone=unique_phone, role=role
     )
 
 def make_team(user=None):
@@ -34,17 +37,21 @@ def make_team(user=None):
         city="Mumbai", state="MH", team_head=user
     )
 
-def make_regulation(players_per_side=11, overs=20):
+# FIX: Added user argument and created_by assignment to satisfy new model structure
+def make_regulation(players_per_side=11, overs=20, user=None):
+    if not user:
+        user = make_user(role="ORGANIZER")
     return Regulation.objects.create(
         match_format="T20", overs_per_innings=overs,
-        players_per_side=players_per_side, tournament_format="LEAGUE"
+        players_per_side=players_per_side, tournament_format="LEAGUE",
+        created_by=user
     )
 
 def make_tournament(reg=None, t_status="ACCEPTING_APPLICATIONS", user=None):
-    if not reg:
-        reg = make_regulation()
     if not user:
         user = make_user()
+    if not reg:
+        reg = make_regulation(user=user)
     return Tournament.objects.create(
         name=f"Cup_{uuid.uuid4().hex[:4]}", category="OPEN",
         regulation=reg, start_date=date.today(),
@@ -95,8 +102,9 @@ class RegulationModelTest(TestCase):
         self.assertIn("T20", str(r))
 
     def test_test_format_allows_null_overs(self):
+        u = make_user(role="ORGANIZER")
         r = Regulation.objects.create(
-            match_format="TEST", tournament_format="LEAGUE"
+            match_format="TEST", tournament_format="LEAGUE", created_by=u
         )
         self.assertIsNone(r.overs_per_innings)
 
@@ -110,10 +118,11 @@ class RegulationModelTest(TestCase):
 
     def test_db_check_constraint_overs_positive(self):
         from django.db import IntegrityError
+        u = make_user(role="ORGANIZER")
         with self.assertRaises(Exception):
             Regulation.objects.create(
                 match_format="T20", overs_per_innings=-5,
-                tournament_format="LEAGUE"
+                tournament_format="LEAGUE", created_by=u
             )
 
 
@@ -139,7 +148,6 @@ class RegulationAPITest(TestCase):
         payload = {**self.payload}
         payload.pop("match_format")
         res = self.client.post("/api/tournaments/regulations/", payload, format="json")
-        # match_format has default so should still pass
         print(f"\n  Missing match_format response: {res.data}")
         self.assertIn(res.status_code, [200, 201])
 
@@ -156,7 +164,8 @@ class RegulationAPITest(TestCase):
         self.assertEqual(res.data["match_format"], "T20")
 
     def test_update(self):
-        r = make_regulation()
+        # FIX: Pass user=self.user so it satisfies IsCreatorOwner permission
+        r = make_regulation(user=self.user)
         res = self.client.patch(f"/api/tournaments/regulations/{r.regulation_id}/",
             {"points_for_win": 3}, format="json")
         assertOK(self, res, 200)
@@ -164,7 +173,8 @@ class RegulationAPITest(TestCase):
         self.assertEqual(r.points_for_win, 3)
 
     def test_delete(self):
-        r = make_regulation()
+        # FIX: Pass user=self.user so it satisfies IsCreatorOwner permission
+        r = make_regulation(user=self.user)
         res = self.client.delete(f"/api/tournaments/regulations/{r.regulation_id}/")
         assertOK(self, res, 204)
         self.assertFalse(Regulation.objects.filter(regulation_id=r.regulation_id).exists())
@@ -192,8 +202,8 @@ class TournamentModelTest(TestCase):
         self.assertIn("OPEN", str(t))
 
     def test_default_status_upcoming(self):
-        reg = make_regulation()
         u = make_user()
+        reg = make_regulation(user=u)
         t = Tournament.objects.create(
             name="No Status Cup", category="OPEN", regulation=reg,
             start_date=date.today(), end_date=date.today() + timedelta(days=5),
@@ -202,8 +212,8 @@ class TournamentModelTest(TestCase):
         self.assertEqual(t.status, "UPCOMING")
 
     def test_refresh_status_closes_expired_deadline(self):
-        reg = make_regulation()
         u = make_user()
+        reg = make_regulation(user=u)
         t = Tournament.objects.create(
             name="Expired Cup", category="OPEN", regulation=reg,
             start_date=date.today(), end_date=date.today() + timedelta(days=5),
@@ -229,7 +239,6 @@ class TournamentModelTest(TestCase):
     def test_regulation_protected_on_delete(self):
         reg = make_regulation()
         make_tournament(reg=reg)
-        from django.db import IntegrityError
         from django.db.models import ProtectedError
         with self.assertRaises(ProtectedError):
             reg.delete()
@@ -241,7 +250,7 @@ class TournamentAPITest(TestCase):
         self.client = APIClient()
         self.user = make_user()
         self.client.force_authenticate(user=self.user)
-        self.reg = make_regulation()
+        self.reg = make_regulation(user=self.user)
         self.payload = {
             "name": "Premier Cup", "category": "OPEN",
             "regulation": self.reg.regulation_id,
@@ -287,9 +296,7 @@ class TournamentAPITest(TestCase):
         self.assertFalse(Tournament.objects.filter(tournament_id=tid).exists())
 
     def test_created_by_readonly(self):
-        other = make_user()
         import datetime
-        # Change line 291 to this:
         res = self.client.post("/api/tournaments/tournaments/", {
             "name": "IPL 2026",
             "regulation": self.reg.regulation_id,  
@@ -474,12 +481,16 @@ class ApplicationAPITest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user = make_user()
+        
+        self.user = make_user(role="TEAMHEAD")
         self.client.force_authenticate(user=self.user)
-        self.team = make_team()
-        self.tournament = make_tournament(user=self.user)
+        self.team = make_team(user=self.user)
+        
+        self.organizer = make_user(role="ORGANIZER")
+        self.tournament = make_tournament(user=self.organizer)
 
     def test_create_application(self):
+        self.client.force_authenticate(user=self.organizer)
         res = self.client.post("/api/tournaments/applications/", {
             "team": str(self.team.team_id),
             "tournament": str(self.tournament.tournament_id),
@@ -492,6 +503,7 @@ class ApplicationAPITest(TestCase):
 
     def test_accept_application_creates_standing(self):
         app = make_application(self.team, self.tournament)
+        self.client.force_authenticate(user=self.organizer)
         res = self.client.patch(f"/api/tournaments/applications/{app.application_id}/",
             {"status": "ACCEPTED"}, format="json")
         assertOK(self, res, 200)
@@ -503,6 +515,7 @@ class ApplicationAPITest(TestCase):
 
     def test_accept_twice_no_duplicate_standing(self):
         app = make_application(self.team, self.tournament)
+        self.client.force_authenticate(user=self.organizer)
         self.client.patch(f"/api/tournaments/applications/{app.application_id}/",
             {"status": "ACCEPTED"}, format="json")
         self.client.patch(f"/api/tournaments/applications/{app.application_id}/",
@@ -514,6 +527,7 @@ class ApplicationAPITest(TestCase):
 
     def test_reject_application(self):
         app = make_application(self.team, self.tournament)
+        self.client.force_authenticate(user=self.organizer)
         res = self.client.patch(f"/api/tournaments/applications/{app.application_id}/",
             {"status": "REJECTED"}, format="json")
         assertOK(self, res, 200)
@@ -552,7 +566,7 @@ class ApplicationAPITest(TestCase):
         self.assertIn("error", res.data)
 
     def test_submit_application_with_enough_players(self):
-        reg = make_regulation(players_per_side=2)
+        reg = make_regulation(players_per_side=2, user=self.user)
         t = make_tournament(reg=reg, user=self.user)
         team = make_team()
         for _ in range(2):
@@ -612,8 +626,8 @@ class TournamentStandingTest(TestCase):
 
     def test_ordering_by_points_then_nrr(self):
         team2 = make_team()
-        s1 = TournamentStanding.objects.create(tournament=self.tournament, team=self.team, points=4)
-        s2 = TournamentStanding.objects.create(tournament=self.tournament, team=team2, points=6)
+        TournamentStanding.objects.create(tournament=self.tournament, team=self.team, points=4)
+        TournamentStanding.objects.create(tournament=self.tournament, team=team2, points=6)
         standings = list(TournamentStanding.objects.filter(tournament=self.tournament))
         self.assertEqual(standings[0].points, 6)
         self.assertEqual(standings[1].points, 4)
@@ -632,4 +646,4 @@ class TournamentStandingTest(TestCase):
         assertOK(self, res, 200)
         s.refresh_from_db()
         print(f"\n  Points after patch attempt: {s.points}")
-        self.assertNotEqual(s.points, 999)  # readonly, should be ignored
+        self.assertNotEqual(s.points, 999)

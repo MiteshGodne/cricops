@@ -1,3 +1,5 @@
+import uuid
+import random
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -7,9 +9,14 @@ from teams.models import Team
 
 
 def make_team():
+    # FIX: Generate a unique email and phone number to satisfy unique constraints
+    unique_id = uuid.uuid4().hex[:8]
+    unique_phone = str(random.randint(1000000000, 9999999999))
+    
+    # FIX: Explicitly assign role="TEAMHEAD" to satisfy permission checks
     user = User.objects.create_user(
-        email="head@team.com", password="Pass@1234",
-        first_name="A", last_name="B", phone="9999999999"
+        email=f"head_{unique_id}@team.com", password="Pass@1234",
+        first_name="A", last_name="B", phone=unique_phone, role="TEAMHEAD"
     )
     return Team.objects.create(
         team_name="Test XI", short_name="TXI",
@@ -93,6 +100,10 @@ class PlayerAPITest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.team = make_team()
+        
+        # FIX: Authenticate the client using the team head user to pass IsTeamHead controls
+        self.client.force_authenticate(user=self.team.team_head)
+        
         self.valid_payload = {
             "full_name": "MS Dhoni",
             "date_of_birth": "1981-07-07",
@@ -135,19 +146,22 @@ class PlayerAPITest(TestCase):
         self.assertEqual(res.data["full_name"], "Virat Kohli")
 
     def test_update_player(self):
-        p = make_player()
+        # FIX: Associate the player with self.team to bypass IsPlayerTeamHeadOwner
+        p = make_player(current_team=self.team)
         res = self.client.patch(f"/api/players/{p.player_id}/", {"nationality": "Indian"}, format="json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["nationality"], "Indian")
 
     def test_deactivate_player(self):
-        p = make_player()
+        # FIX: Associate the player with self.team to bypass IsPlayerTeamHeadOwner
+        p = make_player(current_team=self.team)
         res = self.client.patch(f"/api/players/{p.player_id}/", {"is_active": False}, format="json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertFalse(res.data["is_active"])
 
     def test_delete_player(self):
-        p = make_player()
+        # FIX: Associate the player with self.team to bypass IsPlayerTeamHeadOwner
+        p = make_player(current_team=self.team)
         res = self.client.delete(f"/api/players/{p.player_id}/")
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Player.objects.filter(player_id=p.player_id).exists())
@@ -168,11 +182,12 @@ class PlayerAPITest(TestCase):
         self.assertTrue(all(p["is_active"] for p in res.data))
 
     def test_read_only_fields(self):
-        p = make_player()
+        # FIX: Associate the player with self.team to bypass IsPlayerTeamHeadOwner
+        p = make_player(current_team=self.team)
         fake_id = "00000000-0000-0000-0000-000000000000"
         res = self.client.patch(f"/api/players/{p.player_id}/", {"player_id": fake_id}, format="json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertNotEqual(res.data["player_id"], fake_id)  # read_only, ignored
+        self.assertNotEqual(res.data["player_id"], fake_id)
 
     def test_invalid_team_id(self):
         payload = {**self.valid_payload, "current_team": "00000000-0000-0000-0000-000000000000"}

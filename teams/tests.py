@@ -1,4 +1,5 @@
 import uuid
+import random  # Added for generating random unique digits if needed
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -18,9 +19,13 @@ from tournaments.models import Tournament, Regulation, Application
 def make_user(email=None, role="TEAMHEAD"):
     if email is None:
         email = f"user_{uuid.uuid4().hex[:8]}@x.com"
+    
+    # FIX: Dynamically generate a unique phone number to prevent unique constraint conflicts
+    unique_digits = str(random.randint(1000000000, 9999999999))
+    
     return User.objects.create_user(
         email=email, password="Pass@1234",
-        first_name="A", last_name="B", phone="9999999999", role=role
+        first_name="A", last_name="B", phone=unique_digits, role=role
     )
 
 def make_team(user=None, name="Mumbai XI", short="MXI"):
@@ -31,16 +36,19 @@ def make_team(user=None, name="Mumbai XI", short="MXI"):
         city="Mumbai", state="MH", team_head=user
     )
 
-def make_regulation(players_per_side=11):
+def make_regulation(players_per_side=11, user=None):
+    if not user:
+        user = make_user(role="ORGANIZER")
     return Regulation.objects.create(
         match_format="T20", overs_per_innings=20,
-        players_per_side=players_per_side, tournament_format="LEAGUE"
+        players_per_side=players_per_side, tournament_format="LEAGUE",
+        created_by=user
     )
 
 def make_tournament(reg=None, status="ACCEPTING_APPLICATIONS"):
-    if not reg:
-        reg = make_regulation()
     organizer = make_user(role="ORGANIZER")
+    if not reg:
+        reg = make_regulation(user=organizer)
     return Tournament.objects.create(
         name="Test Cup", category="OPEN", regulation=reg,
         start_date=date.today(), end_date=date.today() + timedelta(days=10),
@@ -55,7 +63,6 @@ def make_player(name="Player One", team=None):
         player_role="BATSMAN", current_team=team
     )
     return p
-
 
 # ─────────────────────────────────────────────
 # TEAM MODEL TESTS
