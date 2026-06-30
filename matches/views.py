@@ -188,9 +188,7 @@ def swap_striker(request, match_id):
         live_state = MatchLiveState.objects.get(match_id=match_id)
     except MatchLiveState.DoesNotExist:
         return Response({'error': 'Live state not found'}, status=404)
-    live_state.current_striker, live_state.current_non_striker = (
-        live_state.current_non_striker, live_state.current_striker
-    )
+    live_state.current_striker, live_state.current_non_striker = (live_state.current_non_striker, live_state.current_striker)
     live_state.save(update_fields=['current_striker', 'current_non_striker'])
     return Response({'striker': live_state.current_striker_id, 'non_striker': live_state.current_non_striker_id})
 

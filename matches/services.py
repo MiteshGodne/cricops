@@ -26,7 +26,7 @@ def validate_playing_xi(innings, striker, non_striker, bowler):
 
 @transaction.atomic
 def process_delivery(validated_data):
-    innings = Innings.objects.select_related('match', 'batting_team', 'fielding_team').get(
+    innings = Innings.objects.select_for_update().select_related('match__tournament__regulation', 'batting_team', 'fielding_team').get(
         innings_id=validated_data['innings_id']
     )
     striker = Player.objects.get(player_id=validated_data['striker_id'])
@@ -47,7 +47,18 @@ def process_delivery(validated_data):
     over_number = (legal_count_before // 6) + 1
     ball_number = (legal_count_before % 6) + 1
 
-    delivery = Delivery.objects.create(match=innings.match, innings=innings, ball_sequence=ball_sequence,over_number=over_number, ball_number=ball_number, runs_scored=runs,extra_type=extra_type, wicket_type=wicket_type,is_boundary=validated_data.get('is_boundary', False),)
+    delivery = Delivery.objects.create(
+        match=innings.match, 
+        innings=innings, 
+        ball_sequence=ball_sequence,
+        over_number=over_number, 
+        ball_number=ball_number, 
+        runs_scored=runs,
+        extra_type=extra_type, 
+        wicket_type=wicket_type,
+        is_legal_delivery=is_legal,
+        is_boundary=validated_data.get('is_boundary', False),
+        )
 
     player_deliveries = [
         PlayerDelivery(delivery=delivery, player=striker, performance_role='STRIKER',
@@ -98,10 +109,10 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
     if wicket_type != 'NONE':
         innings.total_wickets += 1
 
-    legal_count = 0
+    legal_count = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
     if is_legal:
-        legal_count = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
-        innings.overs_completed = float(f"{legal_count // 6}.{legal_count % 6}")
+        legal_count += 1
+    innings.overs_completed = float(f"{legal_count // 6}.{legal_count % 6}")
 
     regulation = innings.match.tournament.regulation
     max_wickets = regulation.players_per_side - 1
@@ -156,7 +167,6 @@ def finalize_match_result(match):
         match.result_type = 'TIE'
         match.winner_team = None
         match.runnerup_team = None
-        # regulation.super_over_enabled would trigger Tier 3 super-over flow — not implemented yet
 
     match.status = 'COMPLETED'
     match.end_date = timezone.now()
@@ -174,10 +184,10 @@ def calculate_nrr(tournament, team):
         match__tournament=tournament, match__status='COMPLETED', fielding_team=team
     )
     runs_for = innings_for.aggregate(r=Sum('total_score'))['r'] or 0
-    overs_for = sum(float(i.overs_completed) for i in innings_for) or 0.001
     runs_against = innings_against.aggregate(r=Sum('total_score'))['r'] or 0
-    overs_against = sum(float(i.overs_completed) for i in innings_against) or 0.001
-    return round((runs_for / overs_for) - (runs_against / overs_against), 3)
+    balls_for = Delivery.objects.filter(innings__match__tournament=tournament, innings__batting_team=team, is_legal_delivery=True).count() or 1
+    balls_against = Delivery.objects.filter(innings__match__tournament=tournament, innings__fielding_team=team, is_legal_delivery=True).count() or 1
+    return round((runs_for / (balls_for / 6)) - (runs_against /(balls_against / 6)), 3)
 
 @transaction.atomic
 def update_standings(match):

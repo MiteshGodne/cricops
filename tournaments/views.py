@@ -64,13 +64,13 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ('list', 'retrieve'):
             return [ReadOnly()]
-        if self.action in ['upadate','partial_update']:
+        if self.action in ('update','partial_update'):
             return [IsOrganizer()]
-        if self.action in ['submit_application']:
+        if self.action in ('submit_application',):
             return [IsTeamHead()]
-        if self.action in ['reapply']:
+        if self.action in ('reapply',):
             return [IsTeamHead()]
         return [IsOrganizer()]
     
@@ -154,4 +154,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 class TournamentStandingViewSet(viewsets.ModelViewSet):
     queryset = TournamentStanding.objects.select_related('tournament', 'team', 'group').all()
     serializer_class = TournamentStandingSerializer
-    permission_classes = [ReadOnly]
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [ReadOnly()]
+        return []

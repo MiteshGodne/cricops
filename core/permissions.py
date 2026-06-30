@@ -48,8 +48,8 @@ class IsUmpireForMatch(BasePermission):
         innings_id = request.data.get('innings_id')
         if not innings_id:
             return False
-        from matches.models import Innings
         try:
+            from matches.models import Innings
             innings = Innings.objects.select_related('match').get(innings_id=innings_id)
             return innings.match.primary_umpire == request.user
         except Innings.DoesNotExist:
