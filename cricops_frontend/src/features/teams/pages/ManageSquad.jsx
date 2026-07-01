@@ -4,7 +4,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 import { useState } from 'react';
 import client from '../../../api/client';
 import AddPlayerForm from '../../players/components/AddPlayerForm';
-import TeamSquadGrid from '../components/TeamSquadGrid';
+import TournamentSquadGrid from '../components/TournamentSquadGrid';
 import Button from '../../../components/Button';
 
 export default function ManageSquad() {
@@ -44,7 +44,7 @@ export default function ManageSquad() {
         <Button onClick={addToSquad}>Add to Squad</Button>
       </div>
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <TeamSquadGrid squad={squad} />
+      <TournamentSquadGrid squad={squad} />
     </div>
   );
 }
