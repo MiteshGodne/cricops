@@ -8,6 +8,7 @@ class MatchSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TeamMatchSerializer(serializers.ModelSerializer):
+    team_name = serializers.CharField(source='team.team_name', read_only=True)
     class Meta:
         model = TeamMatch
         fields = '__all__'

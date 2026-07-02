@@ -40,18 +40,18 @@ class MatchViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='assign-umpire', permission_classes=[IsOrganizer, IsMatchOrganizerOwner])
     def assign_umpire(self, request, pk=None):
         match = self.get_object()
-        user_id = request.data.get('user_id')
+        email = request.data.get('email')
         try:
             from accounts.models import User
-            umpire = User.objects.get(user_id=user_id, apply_for='UMPIRE', role='PENDING')
+            umpire = User.objects.get(email=email, apply_for='UMPIRE', role='PENDING')
         except User.DoesNotExist:
-            return Response({'error': 'No umpire applicant with that user_id.'}, status=400)
+            return Response({'error': 'No pending umpire applicant with that email.'}, status=400)
         match.primary_umpire = umpire
         match.save(update_fields=['primary_umpire'])
         umpire.role = 'UMPIRE'
         umpire.save(update_fields=['role'])
-        return Response({'assigned': str(umpire.user_id), 'match': str(match.match_id)})  
-
+        return Response({'assigned': str(umpire.user_id), 'email': umpire.email})
+    
     def perform_create(self, serializer):
         match = serializer.save()
         match.innings_count = match.tournament.regulation.innings_per_team * 2
@@ -73,7 +73,7 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return [ReadOnly()]
         if self.action == 'submit_toss':
-            return [IsOrganizer()] 
+            return [IsUmpireForMatchFromURL()] 
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsOrganizer()]
         return [IsOrganizer()]  
@@ -89,8 +89,7 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         return Response(serializer.data, status=201)
     
-    @action(detail=False, methods=['post'], url_path='submit-toss',
-        permission_classes=[IsOrganizer])  # role check at endpoint level
+    @action(detail=False, methods=['post'], url_path='submit-toss', permission_classes=[IsOrganizer])  
     def submit_toss(self, request):
         match_id = request.data.get('match_id')
         toss_winner_team_id = request.data.get('toss_winner_team_id')

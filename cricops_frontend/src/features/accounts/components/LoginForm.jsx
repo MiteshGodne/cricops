@@ -16,7 +16,7 @@ export default function LoginForm({ onSubmit, loading, error }) {
       <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
       {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
       <Button type="submit" disabled={loading} className="w-full">
-        {loading ? 'Logging in...' : 'Login'}
+        {loading ? 'Loading...' : 'Login'}
       </Button>
     </form>
   );

@@ -6,6 +6,7 @@ import client from '../../../api/client';
 import AddPlayerForm from '../../players/components/AddPlayerForm';
 import TournamentSquadGrid from '../components/TournamentSquadGrid';
 import Button from '../../../components/Button';
+import Skeleton from '../../../components/Skeleton';
 
 export default function ManageSquad() {
   const { teamId, tournamentId } = useParams();
@@ -29,7 +30,7 @@ export default function ManageSquad() {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <Skeleton rows={4} />;
 
   return (
     <div>
