@@ -177,11 +177,11 @@ export default function TeamHeadDashboard() {
                   <Button className="text-xs"
                     onClick={() => setSelectedTeam(selectedTeam?.team_id === t.team_id ? null : t)}>
                     {selectedTeam?.team_id === t.team_id ? '▲ Hide Players' : '👥 Manage Players'}
-                  </Button>
+                  </Button> &rArr; 
+                  <SquadLinks team={t} />&rArr;
                   <Link to={`/teamhead/apply?team=${t.team_id}`}>
-                    <Button variant="secondary" className="text-xs">🏆 Apply to Tournament</Button>
+                    <Button variant="secondary" className="text-xs">🏆 Applications </Button>
                   </Link>
-                  <SquadLinks team={t} />
                 </div>
               </div>
             ))}
@@ -255,13 +255,12 @@ export default function TeamHeadDashboard() {
                         </td>
                         <td className="p-3">
                           <div className="flex gap-2">
-                            <button className="text-blue-600 text-xs hover:underline"
-                              onClick={() => {
+                            <Button variant='secondary' onClick={() => {
                                 setPlayerForm({ full_name: p.full_name, date_of_birth: p.date_of_birth, player_role: p.player_role, nationality: p.nationality });
                                 setEditPlayer(p);
                                 setShowPlayerForm(true);
-                              }}>Edit</button>
-                            <button className="text-red-500 text-xs hover:underline" onClick={() => deletePlayer(p.player_id)}>Delete</button>
+                              }}>Edit</Button>
+                            <Button variant="danger" className='bg-red-100' onClick={() => deletePlayer(p.player_id)}>Delete</Button>
                           </div>
                         </td>
                       </tr>

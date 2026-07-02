@@ -18,9 +18,7 @@ export default function ManageSquad() {
 
   const squad = Array.isArray(squadData) ? squadData : squadData?.results || [];
   const players = Array.isArray(playersData) ? playersData : playersData?.results || [];
-  // players already in THIS tournament's squad (any team)
   const squadPlayerIds = squad.map((s) => s.player);
-  // available = in team but not yet in this tournament squad
   const available = players.filter((p) => !squadPlayerIds.includes(p.player_id));
 
   const [jersey, setJersey] = useState('');
@@ -141,9 +139,9 @@ export default function ManageSquad() {
                   </td>
                   <td className="p-3">{s.is_playing_xi ? '✓' : '—'}</td>
                   <td className="p-3">
-                    <button className="text-red-500 text-xs hover:underline" onClick={() => removeFromSquad(s.squad_id)}>
+                    <Button variant='danger' onClick={() => removeFromSquad(s.squad_id)}>
                       Remove
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}

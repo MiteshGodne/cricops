@@ -45,7 +45,7 @@ export default function ApplyTournament() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Apply to Tournament</h2>
+        <h2 className="text-xl font-bold">Applications</h2>
         <Link to="/teamhead" className="text-sm text-blue-600 underline">
          <Button>← Back</Button>
         </Link>
@@ -70,10 +70,9 @@ export default function ApplyTournament() {
         {myApps.length === 0 && <p className="text-gray-500">No applications yet.</p>}
         {myApps.map((a) => (
           <div key={a.application_id} className="border rounded p-3 flex justify-between items-center">
-            <div>
               <p className="font-semibold">{a.registered_name}</p>
+              <p className="font-semibold uppercase"> Tournament - {a.tournament_name}</p>
               <ApplicationStatusBadge status={a.status} />
-            </div>
             {a.status === 'REJECTED' && (
               <Button variant="secondary" onClick={() => reapply(a.application_id)}>Reapply</Button>
             )}
