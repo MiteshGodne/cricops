@@ -6,7 +6,7 @@ from teams.models import TournamentSquad
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import IntegrityError
-from core.permissions import IsOrganizer, IsCreatorOwner, ReadOnly, IsOrganizerOwner, IsTeamHead, IsGroupTournamentOwner, IsTournamentOrganizer
+from core.permissions import IsOrganizer, IsCreatorOwner, ReadOnly, IsOrganizerOwner, IsTeamHead, IsGroupTournamentOwner, IsTournamentOrganizer, IsOwnTeamHead
 
 class RegulationViewSet(viewsets.ModelViewSet):
     queryset = Regulation.objects.select_related('created_by').all()
@@ -79,12 +79,12 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [ReadOnly()]
-        if self.action in ('update', 'partial_update'):
-            return [IsTournamentOrganizer()]  
         if self.action == 'submit_application':
             return [IsTeamHead()]
         if self.action == 'reapply':
             return [IsTeamHead()]
+        if self.action == 'withdraw':
+            return [IsOwnTeamHead()]
         return [IsTournamentOrganizer()]
     
     def get_queryset(self):
@@ -117,7 +117,13 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             tournament = Tournament.objects.select_related('regulation').get(tournament_id=tournament_id)
         except Tournament.DoesNotExist:
             return Response({'error': 'Invalid tournament_id.'}, status=400)     
-           
+        from teams.models import Team
+        user_teams = Team.objects.filter(team_head=request.user).values_list('team_id', flat=True)
+        existing = Application.objects.filter(tournament_id=tournament_id, eam_id__in=user_teams,status__in=['PENDING', 'ACCEPTED']).exclude(team_id=team_id).first()
+        if existing:
+            return Response({
+                'error': f'You already have a team ({existing.team.team_name}) applied/accepted in this tournament. One team per organizer per tournament.'
+            }, status=400)
         squad_qs = TournamentSquad.objects.filter(
             tournament_id=tournament_id, team_id=team_id, application__isnull=True
         )
@@ -151,7 +157,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='reapply')
     def reapply(self, request, pk=None):
         application = self.get_object()
-        if application.status != 'REJECTED':
+        if application.status != 'REJECTED' and application.status != 'WITHDRAWN':
             return Response({'error': 'Only rejected applications can be resubmitted.'}, status=400)
         if application.tournament.status != 'ACCEPTING_APPLICATIONS':
             return Response({'error': 'Tournament is no longer accepting applications.'}, status=400)
@@ -161,6 +167,18 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.processed_at = None
         application.processed_by = None
         application.save(update_fields=['status', 'remarks', 'processed_at', 'processed_by'])
+        return Response(ApplicationSerializer(application).data)
+    @action(detail=True, methods=['post'], url_path='withdraw')
+    def withdraw(self, request, pk=None):
+        application = self.get_object()
+        if application.team.team_head != request.user:
+            return Response({'error': 'You do not own this application.'}, status=403)
+        if application.status not in ['PENDING', 'ACCEPTED']:
+            return Response({'error': 'Only PENDING or ACCEPTED applications can be withdrawn.'}, status=400)
+        application.status = 'WITHDRAWN'
+        application.processed_at = timezone.now()
+        application.processed_by = request.user
+        application.save(update_fields=['status', 'processed_at', 'processed_by'])
         return Response(ApplicationSerializer(application).data)
     
     
