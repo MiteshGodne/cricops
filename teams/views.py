@@ -91,3 +91,16 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
                 error = 'Could not add player to squad.'
             return Response({'error': error}, status=400)
         return Response(serializer.data, status=201)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.team.team_head != request.user and instance.team.created_by != request.user:
+            return Response({'error': 'You do not own this team.'}, status=403)
+        self.perform_destroy(instance)
+        return Response(status=204)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.team.team_head != request.user and instance.team.created_by != request.user:
+            return Response({'error': 'You do not own this team.'}, status=403)
+        return super().update(request, *args, **kwargs)
