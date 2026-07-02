@@ -27,7 +27,7 @@ export default function TournamentManage() {
   const { data: standingsData } = useFetch(`${ENDPOINTS.STANDINGS}?tournament=${id}`);
   const { data: venuesData } = useFetch(ENDPOINTS.VENUES);
   const { data: organizersData, refetch: refetchOrgs } = useFetch(`${ENDPOINTS.ORGANIZERS}?tournament=${id}`);
-  const { data: pendingUmpires } = useFetch(ENDPOINTS.PENDING_UMPIRES);
+  const { data: pendingUmpires, error: umpireError } = useFetch(user ? ENDPOINTS.PENDING_UMPIRES : null);
   const { data: teamMatchesAll } = useFetch(`${ENDPOINTS.TEAM_MATCHES}`);
 
   const apps = Array.isArray(appsData) ? appsData : appsData?.results || [];
@@ -37,8 +37,7 @@ export default function TournamentManage() {
   const standings = Array.isArray(standingsData) ? standingsData : standingsData?.results || [];
   const venues = Array.isArray(venuesData) ? venuesData : venuesData?.results || [];
   const organizers = Array.isArray(organizersData) ? organizersData : organizersData?.results || [];
-  const umpires = Array.isArray(pendingUmpires) ? pendingUmpires : [];
-
+  const umpires = Array.isArray(pendingUmpires) ? pendingUmpires : pendingUmpires?.results || [];
   // Permission check
   const isMyTournament = organizers.some((o) => o.user === user?.user_id);
   useEffect(() => {

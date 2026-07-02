@@ -21,6 +21,7 @@ export const ENDPOINTS = {
     SQUADS: '/teams/squads/',
     TEAM_DETAIL: (id) => `/teams/teams/${id}/`,
     SQUAD_DETAIL: (id) => `/teams/squads/${id}/`,
+    WITHDRAW_APPLICATION: (id) => `/tournaments/applications/${id}/withdraw/`,
   
     // tournaments
     REGULATIONS: '/tournaments/regulations/',
@@ -38,6 +39,7 @@ export const ENDPOINTS = {
     OPEN_TOURNAMENTS: '/tournaments/organizers/open/',
 
     UMPIRES_PENDING: '/accounts/users/?apply_for=UMPIRE&role=PENDING',
+    PENDING_UMPIRES: '/accounts/users/pending-umpires/',
     APPROVE_UMPIRE_GLOBAL: '/matches/umpires/approve/',
   
     // matches
