@@ -4,6 +4,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 import TeamCreationWizard from '../components/TeamCreationWizard';
 import { useAuth } from '../../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import Skeleton from '../../../components/Skeleton';
 
 export default function TeamDashboard() {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ export default function TeamDashboard() {
   const myTeams = teams.filter((t) => t.team_head === user?.user_id);
   const [showForm, setShowForm] = useState(myTeams.length === 0);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <Skeleton rows={4} />;
 
   return (
     <div>

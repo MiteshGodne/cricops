@@ -20,7 +20,7 @@ export default function VenueListView() {
         {isOrganizer(user) && <Button onClick={() => setShowForm(true)}>Add Venue</Button>}
       </div>
       {loading ? <p>Loading...</p> : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {venues.map((v) => <VenueCard key={v.venue_id} venue={v} />)}
         </div>
       )}

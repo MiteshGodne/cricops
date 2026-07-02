@@ -17,6 +17,13 @@ class TeamViewSet(viewsets.ModelViewSet):
             return [IsTeamHeadOwner()]
         return [IsTeamHead()]  
     
+    def get_queryset(self):
+        qs = Team.objects.select_related('team_head').all()
+        team_head = self.request.query_params.get('team_head')
+        if team_head:
+            qs = qs.filter(team_head__user_id=team_head)
+        return qs
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, team_head=self.request.user)
         

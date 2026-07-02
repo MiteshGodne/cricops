@@ -87,6 +87,16 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return [IsTeamHead()]
         return [IsTournamentOrganizer()]
     
+    def get_queryset(self):
+        qs = Application.objects.select_related('team','tournament').all()
+        team = self.request.query_params.get('team')
+        tournament = self.request.query_params.get('tournament')
+        status = self.request.query_params.get('status')
+        if team: qs = qs.filter(team__team_id=team)
+        if tournament: qs = qs.filter(tournament__tournament_id=tournament)
+        if status: qs = qs.filter(status=status)
+        return qs
+    
     def perform_update(self, serializer):
         old_status = serializer.instance.status
         if 'status' in serializer.validated_data:

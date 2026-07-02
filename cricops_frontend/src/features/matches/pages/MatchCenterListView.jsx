@@ -2,13 +2,14 @@ import { useFetch } from '../../../hooks/useFetch';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import Skeleton from '../../../components/Skeleton';
 
 export default function MatchCenterListView() {
   const { data, loading } = useFetch(ENDPOINTS.MATCHES);
   const { user } = useAuth();
   const matches = Array.isArray(data) ? data : data?.results || [];
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <Skeleton rows={4} />;
 
   return (
     <div>
