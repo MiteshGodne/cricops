@@ -15,7 +15,7 @@ export default function TournamentDetail() {
   const [tab, setTab] = useState('overview');
 
   const { data: t } = useFetch(`${ENDPOINTS.TOURNAMENTS}${id}/`);
-  const { data: regData } = useFetch(t ? `${ENDPOINTS.REGULATIONS}${t.regulation}/` : null);
+  const { data: regData } = useFetch(t ? `${ENDPOINTS.REGULATIONS}${t.regulation}/` : null, [t?.regulation]);
   const { data: appsData } = useFetch(`${ENDPOINTS.APPLICATIONS}?tournament=${id}`);
   const { data: groupsData } = useFetch(`${ENDPOINTS.GROUPS}?tournament=${id}`);
   const { data: matchesData } = useFetch(`${ENDPOINTS.MATCHES}?tournament=${id}`);
@@ -81,14 +81,13 @@ export default function TournamentDetail() {
           <InfoCard title="Tournament Info">
             <Row label="Format" value={reg?.tournament_format?.replace(/_/g,' ')} />
             <Row label="Match Format" value={reg?.match_format} />
-            <Row label="Teams Registered" value={apps.length} />
             <Row label="Start Date" value={t.start_date} />
-            {/* <Row label="End Date" value={t.end_date || 'TBD'} /> */}
+            <Row label="Status" value={t.status.replace(/_/g,' ')} />
           </InfoCard>
           <InfoCard title="Application Window">
             <Row label="Opens" value={t.application_starts_from ? new Date(t.application_starts_from).toLocaleString() : 'N/A'} />
             <Row label="Closes" value={t.application_deadline ? new Date(t.application_deadline).toLocaleString() : 'N/A'} />
-            <Row label="Status" value={t.status.replace(/_/g,' ')} />
+            <Row label="Teams Registered" value={apps.length} />
           </InfoCard>
           <InfoCard title="Points System">
             <Row label="Win" value={`${reg?.points_for_win} pts`} />
@@ -173,9 +172,7 @@ export default function TournamentDetail() {
       {tab === 'matches' && (
         <div className="space-y-3">
           {matches.length === 0 && <p className="text-gray-500">No matches scheduled yet.</p>}
-          {matches.map((m) => (
-            <MatchCard key={m.match_id} match={m} />
-          ))}
+          {matches.map((m) => (<MatchCard key={m.match_id} match={m} />))}
         </div>
       )}
 
@@ -210,7 +207,7 @@ function MatchCard({ match }) {
       <div className="flex justify-between items-center">
         <div>
           <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
-          <p className="font-semibold mt-1">{match.team_a_name || 'TBD'} vs {match.team_b_name || 'TBD'}</p>
+          <p className="font-semibold mt-1">{match.team_a || 'TBD'} vs {match.team_b || 'TBD'}</p>
           <p className="text-sm text-gray-500">{match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
         </div>
         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
