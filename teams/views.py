@@ -37,7 +37,7 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
-            return [ReadOnly()]
+            return [ReadOnly(), IsOwnTeamHead()]
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsOwnTeamHead(), IsOrganizerOwner()]
         return [IsTeamHead()]

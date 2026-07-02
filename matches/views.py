@@ -88,6 +88,7 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
         match = serializer.validated_data['match']
         team = serializer.validated_data['team']
         accepted = Application.objects.filter(tournament=match.tournament, team=team, status='ACCEPTED').exists()

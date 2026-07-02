@@ -7,9 +7,7 @@ class MatchSerializer(serializers.ModelSerializer):
         model = Match
         fields = '__all__'
 class TeamMatchSerializer(serializers.ModelSerializer):
-    team = serializers.SerializerMethodField()
-    # team_name = serializers.CharField(source='team.team_name', read_only=True)
-
+    team_name = serializers.CharField(source='team.team_name', read_only=True)
     class Meta:
         model = TeamMatch
         fields = '__all__'
@@ -22,10 +20,6 @@ class TeamMatchSerializer(serializers.ModelSerializer):
                 'short_name': obj.team.short_name
             }
         return None
-# class TeamMatchSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = TeamMatch
-#         fields = '__all__'
 
 class InningsSerializer(serializers.ModelSerializer):
     batting_team_name = serializers.CharField(source='batting_team.team_name', read_only=True)

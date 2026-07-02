@@ -62,7 +62,7 @@ class TournamentOrganizerViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [ReadOnly()]
-        return [IsOrganizer()]
+        return [IsTournamentOrganizer()]
     
     @action(detail=False, methods=['get'], url_path='open')
     def open_tournaments(self, request):
