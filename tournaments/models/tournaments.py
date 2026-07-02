@@ -59,7 +59,7 @@ class Tournament(models.Model):
         null=True
     )
     start_date = models.DateField()
-    end_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
     is_public = models.BooleanField(default=True)
     application_starts_from = models.DateTimeField(null=True, blank=True)
     application_deadline = models.DateTimeField(null=True, blank=True)

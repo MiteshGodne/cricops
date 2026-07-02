@@ -8,7 +8,7 @@ class RegulationAdmin(admin.ModelAdmin):
     
 @admin.register(Tournament)
 class TournamentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'status', 'start_date', 'end_date', 'is_public', 'created_by', 'regulation']
+    list_display = ['name', 'category', 'status', 'start_date', 'end_date', 'application_starts_from', 'application_deadline', 'is_public', 'created_by', 'regulation']
     list_filter = ['status', 'category']
     search_fields = ['name']
     ordering = ['-created_at']
@@ -20,7 +20,6 @@ class TournamentOrganizerAdmin(admin.ModelAdmin):
     list_filter = ['institution_type', 'is_primary']
     search_fields = ['institution_name', 'user__email']
     list_select_related = ['tournament', 'user']
-#For memory -> user__email means search for an organizer in user model's email field. 
 
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):

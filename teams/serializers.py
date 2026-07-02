@@ -12,6 +12,8 @@ class TeamSerializer(serializers.ModelSerializer):
         }
 
 class TournamentSquadSerializer(serializers.ModelSerializer):
+    player_name = serializers.CharField(source='player.full_name', read_only=True)
+    team_name = serializers.CharField(source='team.team_name', read_only=True)
     class Meta:
         model = TournamentSquad
         fields = '__all__'
