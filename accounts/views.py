@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from .models import User
 from rest_framework import generics
 from .serializers import UserSerializer, RegisterSerializer
-from core.permissions import IsAuthenticated
+from core.permissions import IsAuthenticated, IsAdminUser, IsOrganizer
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -13,12 +13,13 @@ class RegisterView(generics.CreateAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
     
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny()]
-        return super().get_permissions()
+        if self.action in ('list', 'retrieve'):
+            return [IsOrganizer()]
+        return [IsAdminUser()]
     
     @action(detail=True, methods=['post'], url_path='approve-organizer', permission_classes=[permissions.IsAdminUser])
     def approve_organizer(self, request, pk=None):
@@ -37,21 +38,13 @@ class UserViewSet(viewsets.ModelViewSet):
         user.role = 'REJECTED'
         user.save(update_fields=['role'])
         return Response({'rejected': str(user.user_id)})
-    
-    # @action(detail=False, methods=['get'], url_path='pending-umpires')
-    # def pending_umpires(request):
-    #     if request.user.role != 'ORGANIZER':
-    #         return Response(status=403)
-    #     users = User.objects.filter(apply_for='UMPIRE', role='PENDING')
-    #     from .serializers import UserSerializer
-    #     return Response(UserSerializer(users, many=True).data)
 
-    # @action(detail=False, methods=['get'], url_path='pending-umpires')
-    # def pending_umpires(self, request):
-    #     if not (request.user.is_authenticated and request.user.role == 'ORGANIZER'):
-    #         return Response(status=403)
-    #     users = User.objects.filter(apply_for='UMPIRE', role='PENDING')
-    #     return Response(self.get_serializer(users, many=True).data)
+    @action(detail=False, methods=['get'], url_path='pending-umpires')
+    def pending_umpires(self, request):
+        if not (request.user.is_authenticated and request.user.role == 'ORGANIZER'):
+            return Response(status=403)
+        users = User.objects.filter(apply_for='UMPIRE', role='PENDING')
+        return Response(self.get_serializer(users, many=True).data)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

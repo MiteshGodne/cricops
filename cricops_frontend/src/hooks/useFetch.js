@@ -18,7 +18,7 @@ export function useFetch(url, deps = []) {
     }
   }, [url]);
 
-  useEffect(() => { if (url) refetch(); }, deps);
+  useEffect(() => { if (url) refetch(); }, [url]);
 
   return { data, loading, error, refetch };
 }

@@ -96,15 +96,12 @@ class IsTournamentOrganizer(BasePermission):
         return request.user.is_authenticated and request.user.role == 'ORGANIZER'
     
     def has_object_permission(self, request, view, obj):
-        from tournaments.models import TournamentOrganizer
-        # obj could be Tournament, Application, Match, Group etc.
+        from tournaments.models import TournamentOrganizer, Tournament
         tournament = None
-        if hasattr(obj, 'tournament_id'):
+        if isinstance(obj, Tournament):
             tournament = obj
         elif hasattr(obj, 'tournament'):
             tournament = obj.tournament
         if not tournament:
             return False
-        return TournamentOrganizer.objects.filter(
-            tournament=tournament, user=request.user
-        ).exists()
+        return TournamentOrganizer.objects.filter(tournament=tournament, user=request.user).exists()
