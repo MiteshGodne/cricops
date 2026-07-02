@@ -1,27 +1,53 @@
 import { useFetch } from '../../../hooks/useFetch';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import Skeleton from '../../../components/Skeleton';
+import ApplicationStatusBadge from '../components/ApplicationStatusBadge';
 
 export default function TournamentBrowse() {
   const { data, loading } = useFetch(ENDPOINTS.TOURNAMENTS);
+  const { user } = useAuth();
   const tournaments = Array.isArray(data) ? data : data?.results || [];
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <Skeleton rows={4} />;
+
+  const statusColor = {
+    UPCOMING: 'bg-blue-100 text-blue-700',
+    ACCEPTING_APPLICATIONS: 'bg-green-100 text-green-700',
+    ONGOING: 'bg-orange-100 text-orange-700',
+    COMPLETED: 'bg-gray-100 text-gray-600',
+  };
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Tournaments</h2>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Tournaments</h2>
+        {user?.role === 'ORGANIZER' && (
+          <Link to="/organizer/tournaments/new"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+            + New Tournament
+          </Link>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tournaments.map((t) => (
-          <div key={t.tournament_id} className="border p-4 rounded">
-            <h3 className="font-semibold">{t.name}</h3>
-            <p className="text-sm text-gray-600">{t.category} · {t.status}</p>
-            <p className="text-xs text-gray-500">{t.start_date} → {t.end_date}</p>
-            <Link to={`/tournaments/${t.tournament_id}/manage`} className="text-blue-600 text-sm underline">
-              Manage
-            </Link>
-          </div>
+          <Link to={`/tournaments/${t.tournament_id}`} key={t.tournament_id}
+            className="border rounded-xl p-5 hover:shadow-md transition-all hover:-translate-y-0.5 bg-white group">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition">{t.name}</h3>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[t.status] || 'bg-gray-100'}`}>
+                {t.status.replace(/_/g,' ')}
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mb-2">{t.category.replace(/_/g,' ')}</p>
+            <p className="text-xs text-gray-400">📅 {t.start_date}</p>
+            {t.application_deadline && (
+              <p className="text-xs text-orange-500 mt-1">⏰ Apply by {new Date(t.application_deadline).toLocaleDateString()}</p>
+            )}
+          </Link>
         ))}
+        {tournaments.length === 0 && <p className="text-gray-500 col-span-3">No tournaments yet.</p>}
       </div>
     </div>
   );

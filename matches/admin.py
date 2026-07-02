@@ -3,11 +3,11 @@ from .models import Match, TeamMatch, Innings, Delivery, PlayerDelivery, MatchLi
 
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
-    list_display = ['match_id', 'tournament', 'venue', 'status', 'start_date', 'winner_team', 'runnerup_team', 'group']
+    list_display = ['match_id', 'tournament', 'venue', 'primary_umpire', 'status', 'start_date', 'winner_team', 'runnerup_team', 'group']
     list_filter = ['status', 'tournament']
     search_fields = ['tournament__name' ,'venue__name']
     ordering = ['-start_date']
-    list_select_related = ['tournament', 'venue', 'winner_team', 'group']   # >> to prevent n+1 query searches
+    list_select_related = ['tournament', 'venue', 'winner_team', 'group', 'primary_umpire']   # >> to prevent n+1 query searches
 
 @admin.register(TeamMatch)
 class TeamMatchAdmin(admin.ModelAdmin):

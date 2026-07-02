@@ -7,12 +7,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'user_id', 'email', 'first_name', 'middle_name', 'last_name', 'password', 'apply_for',
-            'phone', 'role', 'avatar_url', 'is_email_verified',
-            'is_phone_verified', 'date_joined'
-        ]
+            'user_id', 'email', 'first_name', 'middle_name', 'last_name', 'password', 'apply_for', 'phone', 'role', 'avatar_url', 'is_email_verified', 'is_phone_verified', 'date_joined', 'is_superuser' ]
         read_only_fields = [
-            'user_id', 'role', 'is_email_verified', 'is_phone_verified', 'date_joined', 'email_verification_token'
+            'user_id', 'role', 'is_email_verified', 'is_phone_verified', 'date_joined', 'email_verification_token', 'is_superuser'
         ]
         extra_kwargs = {
             'password': {'write_only': True, 'required': True},
@@ -55,7 +52,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
     
     def create(self, validated_data):
-        apply_for = validated_data.get('apply_for')
-        role = UserRole.TEAMHEAD if apply_for == 'TEAMHEAD' else UserRole.PENDING
+        apply_for = validated_data.get('apply_for', '')
+        if apply_for == 'TEAMHEAD':
+            role = UserRole.TEAMHEAD
+        elif apply_for in ('ORGANIZER', 'UMPIRE'):
+            role = UserRole.PENDING
+        else:
+            role = UserRole.PENDING
         validated_data['role'] = role
         return User.objects.create_user(**validated_data)

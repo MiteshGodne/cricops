@@ -17,8 +17,18 @@ class TeamViewSet(viewsets.ModelViewSet):
             return [IsTeamHeadOwner()]
         return [IsTeamHead()]  
     
+    def get_queryset(self):
+        qs = Team.objects.select_related('team_head').all()
+        team_head = self.request.query_params.get('team_head')
+        if team_head:
+            qs = qs.filter(team_head__user_id=team_head)
+        return qs
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, team_head=self.request.user)
+        
+    def perform_update(self, serializer):
+        serializer.save(updated_at=timezone.now())
     
 
 class TournamentSquadViewSet(viewsets.ModelViewSet):
@@ -43,7 +53,7 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
         if tournament.status != 'ACCEPTING_APPLICATIONS' or (
             tournament.application_deadline and tournament.application_deadline < timezone.now()
         ):
-            return Response({'error': 'Tournament is not accepting squad entries.'}, status=400)
+            return Response({'error': 'Tournament is not accepting squad entries, try creating after application opens.'}, status=400)
         if player.current_team_id != team.team_id:
             return Response({'error': 'Player does not belong to this team.'}, status=400)
         if team.team_head != request.user and team.created_by != request.user:
@@ -57,6 +67,18 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
             if xi_count >= max_xi:
                 return Response({'error': f'Playing XI limit ({max_xi}) reached for this team.'}, status=400)
 
+        squad_role = serializer.validated_data.get('squad_role', 'PLAYER')
+        if squad_role == 'CAPTAIN':
+            already_captain = TournamentSquad.objects.filter(
+                tournament=tournament, team=team, squad_role='CAPTAIN'
+            ).exists()
+            if already_captain:
+                return Response({'error': 'A captain is already assigned for this team in this tournament.'}, status=400)
+            
+        player = serializer.validated_data['player']
+        if player.player_role == 'WICKETKEEPER':
+            serializer.validated_data['is_wicketkeeper'] = True
+            
         try:
             self.perform_create(serializer)
         except IntegrityError as e:

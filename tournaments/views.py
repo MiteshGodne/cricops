@@ -6,7 +6,7 @@ from teams.models import TournamentSquad
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import IntegrityError
-from core.permissions import IsOrganizer, IsCreatorOwner, ReadOnly, IsOrganizerOwner, IsTeamHead, IsGroupTournamentOwner
+from core.permissions import IsOrganizer, IsCreatorOwner, ReadOnly, IsOrganizerOwner, IsTeamHead, IsGroupTournamentOwner, IsTournamentOrganizer
 
 class RegulationViewSet(viewsets.ModelViewSet):
     queryset = Regulation.objects.select_related('created_by').all()
@@ -20,6 +20,14 @@ class RegulationViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        reg = serializer.instance
+        ongoing = reg.tournaments.filter(status__in=['ONGOING','COMPLETED']).exists()
+        if ongoing:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('Cannot edit regulation — tournament is already ongoing.')
+        serializer.save()
     
 
 class TournamentViewSet(viewsets.ModelViewSet):
@@ -32,9 +40,14 @@ class TournamentViewSet(viewsets.ModelViewSet):
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsOrganizer(), IsOrganizerOwner()]
         return [IsOrganizer()] 
-    
+        
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        tournament = serializer.save(created_by=self.request.user)
+        TournamentOrganizer.objects.create(
+            tournament=tournament,
+            user=self.request.user,
+            is_primary=True
+        )
         
     def get_queryset(self):
         qs = super().get_queryset()
@@ -66,22 +79,33 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [ReadOnly()]
-        if self.action in ('update','partial_update'):
-            return [IsOrganizer()]
-        if self.action in ('submit_application',):
+        if self.action in ('update', 'partial_update'):
+            return [IsTournamentOrganizer()]  
+        if self.action == 'submit_application':
             return [IsTeamHead()]
-        if self.action in ('reapply',):
+        if self.action == 'reapply':
             return [IsTeamHead()]
-        return [IsOrganizer()]
+        return [IsTournamentOrganizer()]
+    
+    def get_queryset(self):
+        qs = Application.objects.select_related('team','tournament').all()
+        team = self.request.query_params.get('team')
+        tournament = self.request.query_params.get('tournament')
+        status = self.request.query_params.get('status')
+        if team: qs = qs.filter(team__team_id=team)
+        if tournament: qs = qs.filter(tournament__tournament_id=tournament)
+        if status: qs = qs.filter(status=status)
+        return qs
     
     def perform_update(self, serializer):
         old_status = serializer.instance.status
         if 'status' in serializer.validated_data:
-            app = serializer.save(processed_at=timezone.now())
+            app = serializer.save(processed_at=timezone.now(),processed_by=self.request.user)
         else:
             app = serializer.save()
         if old_status != 'ACCEPTED' and app.status == 'ACCEPTED':
             TournamentStanding.objects.get_or_create(tournament=app.tournament, team=app.team)
+
             
     @action(detail=False, methods=['post'], url_path='submit-application')
     def submit_application(self, request):

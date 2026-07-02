@@ -60,7 +60,7 @@ export default function UmpireScoringConsole() {
       <LiveScoreWidget matchId={matchId} key={key} />
       {innings && (
         <>
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
             <select className="border rounded px-2 py-1 text-sm" value={striker} onChange={(e) => setStriker(e.target.value)}>
               <option value="">Striker</option>
               {squadA.map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}

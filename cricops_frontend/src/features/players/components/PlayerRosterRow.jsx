@@ -5,6 +5,7 @@ export default function PlayerRosterRow({ player }) {
       <td>{player.player_role}</td>
       <td>{player.nationality || '-'}</td>
       <td>{player.is_active ? 'Active' : 'Inactive'}</td>
+      {/* <td>{player.team_name}</td> */}
     </tr>
   );
 }

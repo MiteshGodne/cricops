@@ -33,7 +33,7 @@ export default function BallEntryPad({ inningsId, strikerId, nonStrikerId, bowle
   return (
     <div className="border rounded p-4">
       <h3 className="font-semibold mb-2">Ball Entry</h3>
-      <div className="grid grid-cols-4 gap-2 mb-3">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
         {[0, 1, 2, 3, 4, 5, 6].map((r) => (
           <button key={r} onClick={() => { setRuns(r); setIsBoundary(r === 4 || r === 6); }}
             className={`border rounded py-2 ${runs === r ? 'bg-blue-600 text-white' : ''}`}>{r}</button>

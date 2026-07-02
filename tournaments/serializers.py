@@ -44,6 +44,8 @@ class GroupSerializer(serializers.ModelSerializer):
         read_only_fields = ['group_id']
 
 class TournamentStandingSerializer(serializers.ModelSerializer):
+    team_name = serializers.CharField(source='team.team_name', read_only=True)
+    tournament_name = serializers.CharField(source='tournament.name', read_only=True)
     class Meta:
         model = TournamentStanding
         fields = '__all__'

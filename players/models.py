@@ -29,5 +29,10 @@ class Player(models.Model):
             models.Index(fields=['is_active']),
         ]
 
+    def save(self, *args, **kwargs):
+        if self.full_name:
+            self.full_name = ' '.join(w.capitalize() for w in self.full_name.strip().split())
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"{self.full_name} ({self.player_role})"

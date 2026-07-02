@@ -90,3 +90,21 @@ class IsGroupTournamentOwner(BasePermission):
 class ReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in ('GET', 'HEAD', 'OPTIONS')
+    
+class IsTournamentOrganizer(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'ORGANIZER'
+    
+    def has_object_permission(self, request, view, obj):
+        from tournaments.models import TournamentOrganizer
+        # obj could be Tournament, Application, Match, Group etc.
+        tournament = None
+        if hasattr(obj, 'tournament_id'):
+            tournament = obj
+        elif hasattr(obj, 'tournament'):
+            tournament = obj.tournament
+        if not tournament:
+            return False
+        return TournamentOrganizer.objects.filter(
+            tournament=tournament, user=request.user
+        ).exists()
