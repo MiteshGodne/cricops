@@ -50,13 +50,12 @@ export default function TournamentManage() {
 
   const [groupName, setGroupName] = useState('');
   const [matchForm, setMatchForm] = useState({
-    venue: '', round_type: 'LEAGUE', round_number: 1,
-    start_date: '', group: '', team_a: '', team_b: '',
+    venue: '', round_type: 'LEAGUE', round_number: 1, start_date: '', group: '', team_a: '', team_b: '',
   });
   const [assignMatchId, setAssignMatchId] = useState(null);
   const [selectedUmpireId, setSelectedUmpireId] = useState('');
   const [newOrgEmail, setNewOrgEmail] = useState('');
-  const [confirmApp, setConfirmApp] = useState(null); // {id, status}
+  const [confirmApp, setConfirmApp] = useState(null); 
 
   const setMF = (k) => (e) => setMatchForm((p) => ({ ...p, [k]: e.target.value }));
 
@@ -154,7 +153,7 @@ export default function TournamentManage() {
       const { data: usersData } = await client.get(`${ENDPOINTS.USERS}?role=ORGANIZER`);
       const users = Array.isArray(usersData) ? usersData : usersData?.results || [];
       const found = users.find((u) => u.email === newOrgEmail);
-      if (!found) { toast.error('Organizer with that email not found'); return; }
+      if (!found) { toast.error('Organizer with that email not found, Co-organizers need to be registered.'); return; }
       await client.post(ENDPOINTS.ORGANIZERS, { tournament: id, user: found.user_id });
       toast.success('Co-organizer added');
       setNewOrgEmail('');
@@ -167,12 +166,11 @@ export default function TournamentManage() {
     try {
       await client.patch(ENDPOINTS.TOURNAMENT_DETAIL(id), { status });
       toast.success('Status updated');
-      // force refetch tournament
       window.location.reload();
     } catch { toast.error('Failed'); }
   };
 
-  const TABS = ['applications','groups','matches','standings','organizers','settings'];
+  const TABS = ['applications','groups','matches','standings','organizers','status update'];
 
   if (!tournament) return <Skeleton rows={4} />;
 
@@ -190,14 +188,14 @@ export default function TournamentManage() {
           <Link to={`/organizer/tournaments/${id}/edit`}>
             <Button variant="secondary">Edit Details</Button>
           </Link>
-          <Link to="/organizer" className="text-sm text-blue-600 underline self-center">← Back</Link>
+          <Link to="/organizer" className="text-sm text-blue-600 underline self-center"> <Button>← Back</Button></Link>
         </div>
       </div>
 
-      {/* Confirm Modal */}
+      {/* Confirm Application */}
       {confirmApp && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
+        <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+          <div className="bg-blue rounded-xl p-6 max-w-sm w-full shadow-xl">
             <h3 className="font-semibold mb-2">Confirm Action</h3>
             <p className="text-sm text-gray-600 mb-4">
               Are you sure you want to <strong>{confirmApp.status}</strong> this application?
@@ -215,11 +213,8 @@ export default function TournamentManage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg overflow-x-auto">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all ${
-              tab === t ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'
-            }`}>
-            {t}
+          <button key={t} onClick={() => setTab(t)}className={`px-4 py-2 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all 
+            ${tab === t ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}> {t}
           </button>
         ))}
       </div>
@@ -232,10 +227,14 @@ export default function TournamentManage() {
             <div key={a.application_id} className="border rounded-xl p-4 flex justify-between items-center bg-white shadow-sm">
               <div>
                 <p className="font-semibold">{a.registered_name}
-                  <span className="text-gray-400 text-sm ml-2">({a.registered_short_name})</span>
+                  <span className="text-gray-400 text-sm ml-2 uppercase">({a.registered_short_name})</span>
                 </p>
-                <div className="mt-1"><ApplicationStatusBadge status={a.status} /></div>
-                {a.processed_by && <p className="text-xs text-gray-400 mt-1">Processed by: {a.processed_by}</p>}
+                <p className='capitalize'> Team Head - {a.team_head_fname +" " + a.team_head_lname}</p>
+              </div>
+              <div>
+                <div className="mt-1">    <ApplicationStatusBadge status={a.status} /></div>
+                {a.processed_by && <p className="text-xs text-gray-400 mt-1"> By: <b> {a.processed_by_name} </b> <br/>
+                {a.processed_by_email}</p>}
               </div>
               {a.status === 'PENDING' && (
                 <div className="flex gap-2">
@@ -313,8 +312,8 @@ export default function TournamentManage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium block mb-1">Venue (optional)</label>
-                  <select className="w-full border rounded px-3 py-2 text-sm" value={matchForm.venue} onChange={setMF('venue')}>
+                  <label className="text-sm font-medium block mb-1">Venue</label>
+                  <select className="w-full border rounded px-3 py-2 text-sm" value={matchForm.venue} onChange={setMF('venue')} required>
                     <option value="">Select venue</option>
                     {venues.map((v) => <option key={v.venue_id} value={v.venue_id}>{v.name}, {v.city}</option>)}
                   </select>
@@ -324,9 +323,7 @@ export default function TournamentManage() {
                 </div>
               </div>
             )}
-            {acceptedApps.length >= 2 && (
-              <Button className="mt-4" onClick={createMatch}>Create Match</Button>
-            )}
+            {acceptedApps.length >= 2 && (<Button className="mt-4" onClick={createMatch}>Create Match</Button>)}
           </div>
 
           <div className="space-y-3">
@@ -402,7 +399,7 @@ export default function TournamentManage() {
             {organizers.map((o) => (
               <div key={o.id} className="border rounded-xl p-3 flex justify-between items-center bg-white shadow-sm">
                 <div>
-                  <p className="font-medium">{o.user_email || o.user}</p>
+                  <p className="font-medium">{ o.user_fname +" "+ o.user_lname +" [ "+ o.user_email +" ]"}</p>
                   {o.is_primary && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Primary</span>}
                 </div>
               </div>
@@ -411,17 +408,15 @@ export default function TournamentManage() {
           <div className="border rounded-xl p-4 bg-white shadow-sm">
             <h4 className="font-semibold mb-3">Add Co-Organizer</h4>
             <div className="flex gap-2">
-              <input className="border rounded px-3 py-2 text-sm flex-1"
-                placeholder="Organizer email"
-                value={newOrgEmail} onChange={(e) => setNewOrgEmail(e.target.value)} />
+              <input className="border rounded px-3 py-2 text-sm flex-1" placeholder="Organizer email" value={newOrgEmail} onChange={(e) => setNewOrgEmail(e.target.value)} />
               <Button onClick={addOrganizer}>Add</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* SETTINGS */}
-      {tab === 'settings' && (
+      {/* STATUS UPDATE*/}
+      {tab === 'status update' && (
         <div className="border rounded-xl p-5 bg-white shadow-sm">
           <h3 className="font-semibold mb-4">Tournament Status</h3>
           <p className="text-sm text-gray-500 mb-4">Current: <strong>{tournament.status}</strong></p>

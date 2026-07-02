@@ -50,7 +50,7 @@ export default function TournamentForm() {
       setExistingTournamentStatus(data.status);
       client.get(`${ENDPOINTS.REGULATIONS}${data.regulation}/`).then(({ data: r }) => setReg({...reg, ...r}));
     });
-  }, [id]);
+  }, [id, isEdit]);
 
   const setR = (k) => (e) => {
     const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -106,7 +106,7 @@ export default function TournamentForm() {
           regPayload.teams_qualifying_per_group = regPayload.teams_qualifying_per_group === '' ? null : parseInt(regPayload.teams_qualifying_per_group, 10);
         }
         if (regPayload.max_teams === '') regPayload.max_teams = null;
-        await client.patch(`${ENDPOINTS.REGULATIONS}${regId}/`, reg);
+        await client.patch(`${ENDPOINTS.REGULATIONS}${regId}/`, regPayload);
       }
       const payload = { ...form, regulation: regulationId };
       if (isEdit) {
@@ -138,7 +138,7 @@ export default function TournamentForm() {
             <div>
               <label className="text-sm font-medium block mb-1">Category *</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.category} onChange={setF('category')}>
-                {CATEGORIES.map((c) => <option key={c}>{c.replace(/_/g,' ')}</option>)}
+                {CATEGORIES.map((c) => <option key={c} value={c} >{c.replace(/_/g,' ')}</option>)}
               </select>
             </div>
             <Input label="Start Date *" type="date" value={form.start_date} onChange={setF('start_date')} error={errors.start_date} required />
@@ -156,7 +156,7 @@ export default function TournamentForm() {
                 <div>
                   <label className="text-sm font-medium block mb-1">Match Format *</label>
                   <select className="w-full border rounded px-3 py-2 text-sm" value={reg.match_format} onChange={setR('match_format')}>
-                    {FORMATS.map((f) => <option key={f}>{f}</option>)}
+                    {FORMATS.map((f) => <option key={f} >{f}</option>)}
                   </select>
                 </div>
                 {reg.match_format !== 'TEST' && (
@@ -184,7 +184,7 @@ export default function TournamentForm() {
                 <div>
                   <label className="text-sm font-medium block mb-1">Tournament Format *</label>
                   <select className="w-full border rounded px-3 py-2 text-sm" value={reg.tournament_format} onChange={setR('tournament_format')}>
-                    {T_FORMATS.map((f) => <option key={f}>{f.replace(/_/g,' ')}</option>)}
+                    {T_FORMATS.map((f) => <option key={f} value={f}>{f.replace(/_/g,' ')}</option>)}
                   </select>
                 </div>
                 <Input label="Min Teams" type="number" value={reg.min_teams} onChange={setR('min_teams')} />

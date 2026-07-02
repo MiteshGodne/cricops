@@ -11,7 +11,7 @@ export default function OrganizerDashboard() {
   const { user } = useAuth();
   const { data, loading, refetch } = useFetch(ENDPOINTS.TOURNAMENTS);
   const tournaments = (Array.isArray(data) ? data : data?.results || [])
-    .filter((t) => t.created_by === user?.user_id);
+    .filter((t) => t.organizers?.includes(user?.user_id) || t.created_by === user?.user_id);
 
   const deleteTournament = async (id) => {
     if (!confirm('Delete this tournament?')) return;
@@ -40,7 +40,7 @@ export default function OrganizerDashboard() {
           {tournaments.map((t) => (
             <div key={t.tournament_id} className="border rounded p-4 flex justify-between items-center">
               <div>
-                <p className="font-semibold">{t.name}</p>
+                <p className="font-semibold uppercase">{t.name}</p>
                 <p className="text-sm text-gray-600">Category : {t.category} · {t.status}</p>
                 <p className="text-xs text-gray-600">📅Start Date : {t.start_date} → {'TBD'}</p>
               </div>
