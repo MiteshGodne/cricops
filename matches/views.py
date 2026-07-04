@@ -80,7 +80,7 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return [ReadOnly()]
         if self.action == 'submit_toss':
-            return [IsUmpireForMatchFromURL()] 
+            return [IsUmpireForMatchFromURL()]
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsOrganizer()]
         return [IsOrganizer()]  
@@ -88,7 +88,6 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        print(serializer.validated_data)
         match = serializer.validated_data['match']
         team = serializer.validated_data['team']
         accepted = Application.objects.filter(tournament=match.tournament, team=team, status='ACCEPTED').exists()
@@ -96,7 +95,8 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Team application not ACCEPTED for this tournament.'}, status=400)
         self.perform_create(serializer)
         return Response(serializer.data, status=201)
-    @action(detail=False, methods=['post'], url_path='submit-toss', permission_classes=[IsUmpireForMatchFromURL | IsUmpireForMatch | IsOrganizer])  
+    
+    @action(detail=False, methods=['post'], url_path='submit-toss', permission_classes=[IsUmpireForMatchFromURL])  
     def submit_toss(self, request):
         try:
             match_id = request.data.get('match_id')
@@ -115,7 +115,6 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
             if team_matches.count() != 2:
                 return Response({'error': f'Both teams not added to match. Found {team_matches.count()} entries.'}, status=400)
 
-            # Safely look up matching team by checking the actual primary key (.pk) string value
             winner_tm = None
             for tm in team_matches:
                 if str(tm.team.pk).lower() == toss_winner_team_id:
@@ -127,7 +126,6 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
 
             loser_tm = team_matches.exclude(id=winner_tm.id).first()
 
-            # Save toss details
             winner_tm.is_toss_winner = True
             winner_tm.toss_decision = toss_decision
             winner_tm.save(update_fields=['is_toss_winner', 'toss_decision'])
@@ -141,7 +139,7 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
                 defaults={'batting_team': batting_team, 'fielding_team': fielding_team}
             )
 
-            # Initialize or update MatchLiveState so live scoring doesn't throw a 404 later
+            # Initialize or update MatchLiveState
             MatchLiveState.objects.update_or_create(
                 match=match,
                 defaults={'current_innings': innings1}
@@ -154,48 +152,7 @@ class TeamMatchViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({'error': f'Internal Server Error: {str(e)}'}, status=500)
-    # @action(detail=False, methods=['post'], url_path='submit-toss', permission_classes=[IsUmpireForMatchFromURL | IsUmpireForMatch | IsOrganizer])  
-    # def submit_toss(self, request):
-    #     match_id = request.data.get('match_id')
-    #     toss_winner_team_id = str(request.data.get('toss_winner_team_id')).strip()
-    #     # toss_winner_team_id = request.data.get('toss_winner_team_id')
-    #     toss_decision = request.data.get('toss_decision')
-
-    #     try:
-    #         match = Match.objects.select_related('tournament').get(match_id=match_id)
-    #     except Match.DoesNotExist:
-    #         return Response({'error': 'Match not found.'}, status=404)
-
-    #     if match.tournament.created_by != request.user and match.primary_umpire != request.user:
-    #         return Response({'error': 'You are neither the tournament organizer nor the assigned umpire for this match.'}, status=403)
-
-    #     team_matches = TeamMatch.objects.filter(match_id=match_id).select_related('team')
-    #     if team_matches.count() != 2:
-    #         return Response({'error': 'Both teams not added to match'}, status=400)
-
-    #     try:
-    #         winner_tm = team_matches.get(team_id=toss_winner_team_id)
-    #     except TeamMatch.DoesNotExist:
-    #         return Response({'error': 'Invalid toss_winner_team_id for this match.'}, status=400)
-    #     loser_tm = team_matches.exclude(team_id=toss_winner_team_id).first()
-
-    #     winner_tm.is_toss_winner = True
-    #     winner_tm.toss_decision = toss_decision
-    #     winner_tm.save(update_fields=['is_toss_winner', 'toss_decision'])
-
-    #     batting_team = winner_tm.team if toss_decision == 'BAT' else loser_tm.team
-    #     fielding_team = loser_tm.team if toss_decision == 'BAT' else winner_tm.team
-
-    #     innings1, _ = Innings.objects.get_or_create(
-    #         match_id=match_id, innings_number=1,
-    #         defaults={'batting_team': batting_team, 'fielding_team': fielding_team}
-    #     )
-
-    #     match.status = 'LIVE'
-    #     match.save(update_fields=['status'])
-
-    #     return Response({'innings_id': innings1.innings_id, 'batting_team': batting_team.team_name})
-
+    
 class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Delivery.objects.select_related('innings', 'match').all()
     serializer_class = DeliverySerializer
