@@ -3,9 +3,16 @@ from .models import Match, TeamMatch, Innings, Delivery, PlayerDelivery
 from .models.deliveries import ExtraType, WicketType
 
 class MatchSerializer(serializers.ModelSerializer):
+    tournament = serializers.ReadOnlyField(source='tournament.name')
+    teams = serializers.SerializerMethodField()
     class Meta:
         model = Match
         fields = '__all__'
+    def get_teams(self, obj):
+        from .models import TeamMatch         
+        team_matches = TeamMatch.objects.filter(match=obj).select_related('team')
+        return [tm.team.team_name for tm in team_matches]
+    
 class TeamMatchSerializer(serializers.ModelSerializer):
     team_name = serializers.CharField(source='team.team_name', read_only=True)
     class Meta:
@@ -104,4 +111,8 @@ class LiveScoreSerializer(serializers.Serializer):
     current_batsmen = LiveBatsmanSerializer(many=True)
     current_bowler = LiveBowlerSerializer(allow_null=True)    
     current_run_rate = serializers.FloatField()
-    required_run_rate = serializers.FloatField(allow_null=True)
+    required_run_rate = serializers.FloatField(allow_null=True) 
+    striker_id = serializers.UUIDField()
+    non_striker_id = serializers.UUIDField()    
+    bowler_id = serializers.UUIDField()
+    overs_remaining = serializers.CharField(allow_null=True)
