@@ -12,7 +12,7 @@ class TeamSerializer(serializers.ModelSerializer):
         }
 
 class TournamentSquadSerializer(serializers.ModelSerializer):
-    player_name = serializers.CharField(source='player.full_name', read_only=True)
+    player_name = serializers.ReadOnlyField(source='player.full_name')
     team_name = serializers.CharField(source='team.team_name', read_only=True)
     class Meta:
         model = TournamentSquad
