@@ -1,8 +1,9 @@
 import { useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import client from '../../../api/client';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { useFetch } from '../../../hooks/useFetch';
+import { useLiveScore } from '../hooks/useLiveScore';
 import LiveScoreWidget from '../components/LiveScoreWidget';
 import BallEntryPad from '../components/BallEntryPad';
 import TossModal from '../components/TossModal';
@@ -14,6 +15,7 @@ export default function UmpireScoringConsole() {
   const { data: teamMatchesData } = useFetch(`${ENDPOINTS.TEAM_MATCHES}?match=${matchId}`);
   const teamMatches = Array.isArray(teamMatchesData) ? teamMatchesData : teamMatchesData?.results || [];
 
+  const { score } = useLiveScore(matchId);
   const [innings, setInnings] = useState(null);
   const [showToss, setShowToss] = useState(false);
   const [striker, setStriker] = useState('');
@@ -42,14 +44,34 @@ export default function UmpireScoringConsole() {
   useEffect(() => {
     if (!innings) return;
     client.get(`${ENDPOINTS.SQUADS}?team=${innings.batting_team}&is_playing_xi=true`).then(({ data }) => {
-      setSquadA(Array.isArray(data) ? data.map((s) => s.player_detail || { player_id: s.player, full_name: s.player }) : []);
+      setSquadA(Array.isArray(data) ? data.map((s) => ({ player_id: s.player, full_name: s.player_name })) : []);
     });
     client.get(`${ENDPOINTS.SQUADS}?team=${innings.fielding_team}&is_playing_xi=true`).then(({ data }) => {
-      setSquadB(Array.isArray(data) ? data.map((s) => s.player_detail || { player_id: s.player, full_name: s.player }) : []);
+      setSquadB(Array.isArray(data) ? data.map((s) => ({ player_id: s.player, full_name: s.player_name })) : []);
     });
   }, [innings]);
 
+  const hydrated = useRef(null);
+  useEffect(() => {
+    if (score && hydrated.current !== innings?.innings_id) {
+      setStriker(score.striker_id);
+      setNonStriker(score.non_striker_id);
+      setBowler(score.bowler_id);
+      hydrated.current = innings?.innings_id;
+    }
+  }, [score, innings?.innings_id]);
+
+  useEffect(() => {
+    if (!score) return;
+    const ids = score.current_batsmen.map((b) => b.player_id);
+    if (striker && !ids.includes(striker)) setStriker('');
+    if (nonStriker && !ids.includes(nonStriker)) setNonStriker('');
+  }, [score?.current_batsmen]);
+
   if (!match) return <p>Loading...</p>;
+
+  const ballInOver = score?.overs_completed ? Number(score.overs_completed.toString().split('.')[1] || 0) : 0;
+  const bowlerLocked = ballInOver > 0;
 
   return (
     <div>
@@ -69,7 +91,8 @@ export default function UmpireScoringConsole() {
               <option value="">Non-striker</option>
               {squadA.map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
             </select>
-            <select className="border rounded px-2 py-1 text-sm" value={bowler} onChange={(e) => setBowler(e.target.value)}>
+            <select className="border rounded px-2 py-1 text-sm" value={bowler} disabled={bowlerLocked}
+              onChange={(e) => setBowler(e.target.value)}>
               <option value="">Bowler</option>
               {squadB.map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
             </select>

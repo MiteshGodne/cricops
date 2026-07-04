@@ -7,12 +7,13 @@ import StandingsTable from '../components/StandingsTable';
 import ApplicationStatusBadge from '../components/ApplicationStatusBadge';
 import Skeleton from '../../../components/Skeleton';
 
-const TABS = ['overview', 'regulations', 'teams', 'groups', 'matches', 'standings'];
+const TABS = ['overview', 'matches', 'teams','regulations', 'groups', 'standings'];
 
 export default function TournamentDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const [tab, setTab] = useState('overview');
+  const [key, setKey] = useState(0);
 
   const { data: t } = useFetch(`${ENDPOINTS.TOURNAMENTS}${id}/`);
   const { data: regData } = useFetch(t ? `${ENDPOINTS.REGULATIONS}${t.regulation}/` : null, [t?.regulation]);
@@ -106,6 +107,14 @@ export default function TournamentDetail() {
         </div>
       )}
 
+      {/* MATCHES */}
+      {tab === 'matches' && (
+        <div className="space-y-3">
+          {matches.length === 0 && <p className="text-gray-500">No matches scheduled yet.</p>}
+          {matches.map((m) => (<MatchCard key={m.match_id} match={m} />))}
+        </div>
+      )}
+
       {/* REGULATIONS */}
       {tab === 'regulations' && reg && (
         <div className="space-y-4">
@@ -168,13 +177,6 @@ export default function TournamentDetail() {
         </div>
       )}
 
-      {/* MATCHES */}
-      {tab === 'matches' && (
-        <div className="space-y-3">
-          {matches.length === 0 && <p className="text-gray-500">No matches scheduled yet.</p>}
-          {matches.map((m) => (<MatchCard key={m.match_id} match={m} />))}
-        </div>
-      )}
 
       {/* STANDINGS */}
       {tab === 'standings' && (
@@ -210,10 +212,9 @@ function MatchCard({ match }) {
           <p className="font-semibold mt-1">{match.team_a || 'TBD'} vs {match.team_b || 'TBD'}</p>
           <p className="text-sm text-gray-500">{match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          match.status === 'LIVE' ? 'bg-green-500 text-white animate-pulse' :
-          match.status === 'COMPLETED' ? 'bg-gray-400 text-white' : 'bg-blue-100 text-blue-700'
-        }`}>{match.status}</span>
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${match.status === 'LIVE' ? 'bg-green-500 text-white animate-pulse' :
+          match.status === 'COMPLETED' ? 'bg-gray-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
+        </span>
       </div>
     </div>
   );

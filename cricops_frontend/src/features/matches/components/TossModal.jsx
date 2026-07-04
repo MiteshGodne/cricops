@@ -2,6 +2,7 @@ import { useState } from 'react';
 import client from '../../../api/client';
 import { ENDPOINTS } from '../../../api/endpoints';
 import Button from '../../../components/Button';
+import { useFetch } from '../../../hooks/useFetch';
 
 export default function TossModal({ match, teamA, teamB, onClose, onDone }) {
   const [winner, setWinner] = useState('');
@@ -26,8 +27,8 @@ export default function TossModal({ match, teamA, teamB, onClose, onDone }) {
         <h3 className="font-semibold mb-3">Submit Toss</h3>
         <select className="w-full border rounded px-3 py-2 text-sm mb-3" value={winner} onChange={(e) => setWinner(e.target.value)}>
           <option value="">Toss winner</option>
-          <option value={teamA.team_id}>{teamA.team_name}</option>
-          <option value={teamB.team_id}>{teamB.team_name}</option>
+          <option value={teamA}>{match.teams?.[0]}</option>
+          <option value={teamB}>{match.teams?.[1]}</option>
         </select>
         <select className="w-full border rounded px-3 py-2 text-sm mb-3" value={decision} onChange={(e) => setDecision(e.target.value)}>
           <option value="BAT">Bat</option>
