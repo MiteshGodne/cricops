@@ -61,7 +61,7 @@ class IsUmpireForMatchFromURL(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated or request.user.role != 'UMPIRE':
             return False
-        match_id = view.kwargs.get('match_id')
+        match_id = request.data.get('match_id')
         if not match_id:
             return False
         from matches.models import Match
