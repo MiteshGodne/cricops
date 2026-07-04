@@ -32,7 +32,7 @@ class TeamViewSet(viewsets.ModelViewSet):
     
 
 class TournamentSquadViewSet(viewsets.ModelViewSet):
-    queryset = TournamentSquad.objects.select_related('player', 'team', 'tournament').all()
+    # queryset = TournamentSquad.objects.select_related('player', 'team', 'tournament').all()
     serializer_class = TournamentSquadSerializer
     
     def get_permissions(self):
@@ -41,6 +41,22 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsOwnTeamHead(), IsOrganizerOwner()]
         return [IsTeamHead()]
+
+    def get_queryset(self):
+        queryset = TournamentSquad.objects.all()
+                
+        team_id = self.request.query_params.get('team')
+        is_playing_xi = self.request.query_params.get('is_playing_xi')
+        tournament_id = self.request.query_params.get('tournament')
+
+        if team_id:
+            queryset = queryset.filter(team=team_id)            
+        if is_playing_xi:
+            is_playing_bool = is_playing_xi.lower() == 'true'
+            queryset = queryset.filter(is_playing_xi=is_playing_bool)            
+        if tournament_id:
+            queryset = queryset.filter(tournament=tournament_id)
+        return queryset
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
