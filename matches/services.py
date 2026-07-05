@@ -87,11 +87,20 @@ def process_delivery(validated_data):
     legal_count_after = legal_count_before + (1 if is_legal else 0)
     odd_runs = is_legal and (runs % 2 == 1) and extra_type == 'NONE'
     over_just_ended = is_legal and legal_count_after % 6 == 0
-    should_swap = odd_runs != over_just_ended  
+    should_swap = odd_runs != over_just_ended
 
     new_striker, new_non_striker = (non_striker, striker) if should_swap else (striker, non_striker)
-    update_live_state(innings, new_striker, new_non_striker, bowler)
 
+    if wicket_type != 'NONE':
+        if new_striker and new_striker.player_id == dismissed_id:
+            new_striker = None
+        elif new_non_striker and new_non_striker.player_id == dismissed_id:
+            new_non_striker = None
+        innings.match.is_paused = True
+        innings.match.pause_reason = 'WICKET'
+        innings.match.save(update_fields=['is_paused', 'pause_reason'])
+
+    update_live_state(innings, new_striker, new_non_striker, bowler)
     return delivery
 
 def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal, is_boundary=False):
@@ -131,9 +140,11 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         'total_sixes', 'overs_completed', 'is_completed', 'end_time'
     ])
 
-    if not just_completed:
-        return
-
+    if just_completed and not target_chased and innings.innings_number < match.innings_count:
+        match.is_paused = True
+        match.pause_reason = 'INNINGS_END'
+        match.save(update_fields=['is_paused', 'pause_reason'])
+        
     match = innings.match
     total_innings_expected = match.innings_count
     next_innings = Innings.objects.filter(match=match, innings_number=innings.innings_number + 1).first()
@@ -300,8 +311,12 @@ def get_live_score(match):
             'wickets': stats['wickets'] or 0,
             'economy': round(runs / overs_float, 2) if overs_float > 0 else 0.0,
         }
-    striker_data = {**batsman_stats(live_state.current_striker, innings), 'is_striker': True}
-    non_striker_data = {**batsman_stats(live_state.current_non_striker, innings), 'is_striker': False}
+    striker_data = batsman_stats(live_state.current_striker, innings) if live_state.current_striker else None
+    if striker_data: striker_data['is_striker'] = True
+    
+    non_striker_data = batsman_stats(live_state.current_non_striker, innings) if live_state.current_non_striker else None
+    if non_striker_data: non_striker_data['is_striker'] = False
+
     bowler_data = bowler_stats(live_state.current_bowler, innings)
         
     regulation = match.tournament.regulation
@@ -323,6 +338,10 @@ def get_live_score(match):
             required_run_rate = round(runs_required / (remaining_balls / 6), 2)
         else:
             required_run_rate = 0.0
+            
+    total_balls = (regulation.overs_per_innings or 0) * 6
+    balls_remaining = max(total_balls - legal_balls, 0) if regulation.overs_per_innings else None
+    overs_remaining = calculate_overs(balls_remaining) if balls_remaining is not None else None
     return {
         'match_id': match.match_id,
         'match_status': match.status,
@@ -337,6 +356,13 @@ def get_live_score(match):
         'runs_required': runs_required,
         'current_run_rate': current_run_rate,
         'required_run_rate': required_run_rate,
-        'current_batsmen': [striker_data, non_striker_data],
         'current_bowler': bowler_data,
+        'current_batsmen': [b for b in [striker_data, non_striker_data] if b],
+        'striker_id': str(live_state.current_striker_id) if live_state.current_striker_id else None,
+        'non_striker_id': str(live_state.current_non_striker_id) if live_state.current_non_striker_id else None,
+        'bowler_id': str(live_state.current_bowler_id),
+        'overs_remaining': overs_remaining,
+        'out_player_ids': list(PlayerDelivery.objects.filter(delivery__innings=innings, dismissal_info__gt='').values_list('player_id', flat=True).distinct()),
+        'is_paused': match.is_paused,
+        'pause_reason': match.pause_reason,
     }
