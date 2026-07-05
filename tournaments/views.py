@@ -119,7 +119,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid tournament_id.'}, status=400)     
         from teams.models import Team
         user_teams = Team.objects.filter(team_head=request.user).values_list('team_id', flat=True)
-        existing = Application.objects.filter(tournament_id=tournament_id, eam_id__in=user_teams,status__in=['PENDING', 'ACCEPTED']).exclude(team_id=team_id).first()
+        existing = Application.objects.filter(tournament_id=tournament_id, team_id__in=user_teams,status__in=['PENDING', 'ACCEPTED']).exclude(team_id=team_id).first()
         if existing:
             return Response({
                 'error': f'You already have a team ({existing.team.team_name}) applied/accepted in this tournament. One team per organizer per tournament.'
@@ -130,7 +130,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         min_required = tournament.regulation.players_per_side
         if squad_qs.count() < min_required:
             return Response(
-                {'error': f'At least {min_required} players required, found {squad_qs.count()}'},
+                {'error': f'At least {min_required} players required, found {squad_qs.count()} in your squad.'},
                 status=400
             )
         try:
