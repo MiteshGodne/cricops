@@ -22,10 +22,11 @@ export default function LiveScoreWidget({ matchId }) {
   const nonStriker = score.current_batsmen.find(b => !b.is_striker);
 
   return (
-    <div className={`relative rounded-2xl overflow-hidden mt-3 shadow-lg border transition-all duration-500 ${flash ? 'ring-4 ring-green-400 scale-[1.01]' : 'ring-0'}`}>
+    <div className={`relative rounded-2xl overflow-hidden mt-3 shadow-lg border transition-all duration-500 ${flash ? 'ring-4 ring-green-400 scale-[1.01]' : 'ring-0'} mb-3`}>
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-4 py-3 grid grid-cols-3 items-center">
         {/* Batting side */}
         <div className="text-left">
+          <p className="text-[10px] text-slate-400">Innings Number : {score.innings_number}</p>
           <p className="text-[10px] uppercase tracking-wider text-green-400 font-semibold mb-1">Batting</p>
           <p className="font-bold text-sm truncate">{score.batting_team}</p>
           <div className="mt-1 space-y-0.5 text-xs text-slate-300">
@@ -39,10 +40,13 @@ export default function LiveScoreWidget({ matchId }) {
           <p className={`text-3xl font-extrabold tracking-tight transition-transform duration-500 ${flash ? 'scale-110 text-green-400' : ''}`}>
             {score.total_score}<span className="text-lg">/{score.total_wickets}</span>
           </p>
-          <p className="text-xs text-slate-400 mt-0.5">{score.overs_completed} ov · CRR {score.current_run_rate}</p>
+          <div className="text-xs text-slate-400 mt-0.5">
+            <p>{score.overs_completed} overs | {score.overs_remaining} overs left <br />
+              Current Run Rate : {score.current_run_rate}</p>
+          </div>
           {score.target_runs && (
             <p className="text-[11px] text-amber-300 mt-1">
-              Need {score.runs_required} · RRR {score.required_run_rate}
+              Needs {score.runs_required} | Required Run Rate {score.required_run_rate}
             </p>
           )}
         </div>
@@ -52,7 +56,7 @@ export default function LiveScoreWidget({ matchId }) {
           <p className="text-[10px] uppercase tracking-wider text-red-400 font-semibold mb-1">Bowling</p>
           <p className="font-bold text-sm truncate">{score.fielding_team}</p>
           <p className="text-xs text-slate-300 mt-1">
-            {score.current_bowler.player_name}<br/>
+            {score.current_bowler.player_name}<br />
             {score.current_bowler.overs}-{score.current_bowler.runs_conceded}-{score.current_bowler.wickets}
           </p>
         </div>

@@ -22,10 +22,10 @@ export default function TossModal({ match, teamA, teamB, onClose, onDone }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-20">
       <div className="bg-white p-6 rounded w-80">
         <h3 className="font-semibold mb-3">Submit Toss</h3>
-        <select className="w-full border rounded px-3 py-2 text-sm mb-3" value={winner} onChange={(e) => setWinner(e.target.value)}>
+        <select className="w-full border rounded px-3 py-2 text-sm mb-3 capitalize" value={winner} onChange={(e) => setWinner(e.target.value)}>
           <option value="">Toss winner</option>
           <option value={teamA}>{match.teams?.[0]}</option>
           <option value={teamB}>{match.teams?.[1]}</option>
