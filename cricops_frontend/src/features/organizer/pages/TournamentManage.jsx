@@ -5,14 +5,17 @@ import { ENDPOINTS } from '../../../api/endpoints';
 import client from '../../../api/client';
 import { useAuth } from '../../../context/AuthContext';
 import Button from '../../../components/Button';
+import BackButton from '../../../components/BackButton';
+import DeleteButton from '../../../components/DeleteButton';
 import Input from '../../../components/Input';
 import ApplicationStatusBadge from '../../tournaments/components/ApplicationStatusBadge';
 import StandingsTable from '../../tournaments/components/StandingsTable';
 import Skeleton from '../../../components/Skeleton';
 import toast from 'react-hot-toast';
+import MatchManage from './MatchManage';
 
-const ROUND_TYPES = ['LEAGUE','QUALIFIER','QUARTERFINAL','SEMIFINAL','FINAL'];
-const STATUSES = ['UPCOMING','ACCEPTING_APPLICATIONS','APPLICATIONS_CLOSED','ONGOING','COMPLETED','CANCELLED'];
+const ROUND_TYPES = ['LEAGUE', 'QUALIFIER', 'QUARTERFINAL', 'SEMIFINAL', 'FINAL'];
+const STATUSES = ['UPCOMING', 'ACCEPTING_APPLICATIONS', 'APPLICATIONS_CLOSED', 'ONGOING', 'COMPLETED', 'CANCELLED'];
 
 export default function TournamentManage() {
   const { id } = useParams();
@@ -38,7 +41,7 @@ export default function TournamentManage() {
   const venues = Array.isArray(venuesData) ? venuesData : venuesData?.results || [];
   const organizers = Array.isArray(organizersData) ? organizersData : organizersData?.results || [];
   const umpires = Array.isArray(pendingUmpires) ? pendingUmpires : pendingUmpires?.results || [];
-  // Permission check
+
   const isMyTournament = organizers.some((o) => o.user === user?.user_id);
   useEffect(() => {
     if (organizers.length > 0 && !isMyTournament) {
@@ -54,11 +57,10 @@ export default function TournamentManage() {
   const [assignMatchId, setAssignMatchId] = useState(null);
   const [selectedUmpireId, setSelectedUmpireId] = useState('');
   const [newOrgEmail, setNewOrgEmail] = useState('');
-  const [confirmApp, setConfirmApp] = useState(null); 
+  const [confirmApp, setConfirmApp] = useState(null);
 
   const setMF = (k) => (e) => setMatchForm((p) => ({ ...p, [k]: e.target.value }));
 
-  // Get assigned match team names
   const getMatchTeams = (matchId) => {
     const all = Array.isArray(teamMatchesAll) ? teamMatchesAll : teamMatchesAll?.results || [];
     return all.filter((tm) => tm.match === matchId);
@@ -109,7 +111,7 @@ export default function TournamentManage() {
     }
     try {
       const { data: newMatch } = await client.post(ENDPOINTS.MATCHES, {
-        tournament: id,
+        tournament: tournament?.tournament_id,
         venue: matchForm.venue || null,
         round_type: matchForm.round_type,
         round_number: Number(matchForm.round_number),
@@ -121,7 +123,7 @@ export default function TournamentManage() {
         client.post(ENDPOINTS.TEAM_MATCHES, { match: newMatch.match_id, team: matchForm.team_b, side: 'B' }),
       ]);
       toast.success('Match created');
-      setMatchForm({ venue:'', round_type:'LEAGUE', round_number:1, start_date:'', group:'', team_a:'', team_b:'' });
+      setMatchForm({ venue: '', round_type: 'LEAGUE', round_number: 1, start_date: '', group: '', team_a: '', team_b: '' });
       refetchMatches();
     } catch (err) { toast.error(JSON.stringify(err.response?.data)); }
   };
@@ -161,7 +163,7 @@ export default function TournamentManage() {
   };
 
   const updateStatus = async (status) => {
-    if (!confirm(`Change status to "${status.replace(/_/g,' ')}"?`)) return;
+    if (!confirm(`Change status to "${status.replace(/_/g, ' ')}"?`)) return;
     try {
       await client.patch(ENDPOINTS.TOURNAMENT_DETAIL(id), { status });
       toast.success('Status updated');
@@ -169,7 +171,7 @@ export default function TournamentManage() {
     } catch { toast.error('Failed'); }
   };
 
-  const TABS = ['applications','groups','matches','standings','organizers','status update'];
+  const TABS = ['applications', 'groups', 'matches', 'standings', 'organizers', 'status update'];
 
   if (!tournament) return <Skeleton rows={4} />;
 
@@ -183,11 +185,11 @@ export default function TournamentManage() {
             <span className="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">{tournament.status}</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Link to={`/organizer/tournaments/${id}/edit`}>
-            <Button variant="secondary">Edit Details</Button>
+            <Button variant="secondary">Edit Details &#9998;</Button>
           </Link>
-          <Link to="/organizer" className="text-sm text-blue-600 underline self-center"> <Button>← Back</Button></Link>
+          <Link to="/organizer" className="text-sm text-blue-600 underline self-center"> <BackButton>Back</BackButton></Link>
         </div>
       </div>
 
@@ -212,8 +214,8 @@ export default function TournamentManage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg overflow-x-auto">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)}className={`px-4 py-2 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all 
-            ${tab === t ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}> {t}
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all 
+            ${tab === t ? 'bg-white shadow text-[#183152]' : 'text-gray-500 hover:text-gray-700'}`}> {t}
           </button>
         ))}
       </div>
@@ -228,12 +230,12 @@ export default function TournamentManage() {
                 <p className="font-semibold">{a.registered_name}
                   <span className="text-gray-400 text-sm ml-2 uppercase">({a.registered_short_name})</span>
                 </p>
-                <p className='capitalize'> Team Head - {a.team_head_fname +" " + a.team_head_lname}</p>
+                <p className='capitalize'> Team Head - {a.team_head_fname + " " + a.team_head_lname}</p>
               </div>
               <div>
                 <div className="mt-1">    <ApplicationStatusBadge status={a.status} /></div>
-                {a.processed_by && <p className="text-xs text-gray-400 mt-1"> By: <b> {a.processed_by_name} </b> <br/>
-                {a.processed_by_email}</p>}
+                {a.processed_by && <p className="text-xs text-gray-400 mt-1"> By: <b> {a.processed_by_name} </b> <br />
+                  {a.processed_by_email}</p>}
               </div>
               {a.status === 'PENDING' && (
                 <div className="flex gap-2">
@@ -264,7 +266,7 @@ export default function TournamentManage() {
             {groups.map((g) => (
               <div key={g.group_id} className="border rounded-xl p-4 flex justify-between items-center bg-white shadow-sm">
                 <span className="font-medium">{g.name}</span>
-                <Button variant="danger" onClick={() => deleteGroup(g.group_id)}>Delete</Button>
+                <DeleteButton variant="danger" onClick={() => deleteGroup(g.group_id)}>Delete</DeleteButton>
               </div>
             ))}
           </div>
@@ -342,19 +344,21 @@ export default function TournamentManage() {
                         {m.round_type} · R{m.round_number}
                         {m.start_date && ` · ${new Date(m.start_date).toLocaleString()}`}
                       </p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${
-                        m.status === 'LIVE' ? 'bg-green-100 text-green-700' :
+                      <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${m.status === 'LIVE' ? 'bg-green-100 text-green-700' :
                         m.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-700'
-                      }`}>{m.status}</span>
+                        }`}>{m.status}</span>
                       <p className="text-xs text-gray-400 mt-1">
                         Umpire: {m.primary_umpire_email || m.primary_umpire || 'Not assigned'}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="secondary" onClick={() => setAssignMatchId(assignMatchId === m.match_id ? null : m.match_id)}>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Link to={`/organizer/matches/${m.match_id}/manage`}>
+                        <Button> &#128295; Manage Match</Button>
+                      </Link>
+                      <Button onClick={() => setAssignMatchId(assignMatchId === m.match_id ? null : m.match_id)}>
                         {m.primary_umpire ? '✓ Reassign Umpire' : 'Assign Umpire'}
                       </Button>
-                      <Button variant="danger" onClick={() => deleteMatch(m.match_id)}>Delete</Button>
+                      <DeleteButton variant="danger" onClick={() => deleteMatch(m.match_id)}>Delete</DeleteButton>
                     </div>
                   </div>
                   {assignMatchId === m.match_id && (
@@ -398,7 +402,7 @@ export default function TournamentManage() {
             {organizers.map((o) => (
               <div key={o.id} className="border rounded-xl p-3 flex justify-between items-center bg-white shadow-sm">
                 <div>
-                  <p className="font-medium">{ o.user_fname +" "+ o.user_lname +" [ "+ o.user_email +" ]"}</p>
+                  <p className="font-medium">{o.user_fname + " " + o.user_lname + " [ " + o.user_email + " ]"}</p>
                   {o.is_primary && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Primary</span>}
                 </div>
               </div>
@@ -408,7 +412,7 @@ export default function TournamentManage() {
             <h4 className="font-semibold mb-3">Add Co-Organizer</h4>
             <div className="flex gap-2">
               <input className="border rounded px-3 py-2 text-sm flex-1" placeholder="Organizer email" value={newOrgEmail} onChange={(e) => setNewOrgEmail(e.target.value)} />
-              <Button onClick={addOrganizer}>Add</Button>
+              <Button onClick={addOrganizer}> + Add </Button>
             </div>
           </div>
         </div>
@@ -422,12 +426,11 @@ export default function TournamentManage() {
           <div className="flex flex-wrap gap-2">
             {STATUSES.map((s) => (
               <button key={s} onClick={() => updateStatus(s)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
-                  tournament.status === s
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'hover:bg-gray-50 border-gray-300'
-                }`}>
-                {s.replace(/_/g,' ')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${tournament.status === s
+                  ? 'bg-[#1b3a65] text-white border-[#1b3a65'
+                  : 'hover:bg-gray-50 border-gray-300'
+                  }`}>
+                {s.replace(/_/g, ' ')}
               </button>
             ))}
           </div>
