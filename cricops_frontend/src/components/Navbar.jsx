@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
-  { to: '/tournaments', label: 'Tournaments' },
-  { to: '/matches', label: 'Matches' },
+  { to: '/tournaments', label: 'Tournaments Schedules' },
+  { to: '/matches', label: 'Live Matches' },
   { to: '/venues', label: 'Venues' },
   { to: '/players', label: 'Players' },
+  { to: '/about', label: 'About Us' }
 ];
 
 export default function Navbar() {
@@ -28,34 +29,34 @@ export default function Navbar() {
   }, []);
 
   const links = [
-    ...(user?.role === 'ORGANIZER' ? [{ to: '/organizer', label: 'Dashboard' }] : []),
-    ...(user?.role === 'TEAMHEAD' ? [{ to: '/teamhead', label: 'Dashboard' }] : []),
-    ...(user?.role === 'UMPIRE' ? [{ to: '/umpire', label: 'Dashboard' }] : []),
+    ...(user?.role === 'ORGANIZER' ? [{ to: '/organizer', label: "My Dashboard" }] : []),
+    ...(user?.role === 'TEAMHEAD' ? [{ to: '/teamhead', label: "My Dashboard" }] : []),
+    ...(user?.role === 'UMPIRE' ? [{ to: '/umpire', label: "My Dashboard" }] : []),
     ...NAV_LINKS,
   ];
 
   return (
-    <nav className="bg-gray-900 text-white px-4 py-3">
+    <nav className="bg-[#1b3a65] text-white px-4 py-3">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="font-bold text-lg shrink-0">CricOps</Link>
+        <Link to="/" className="font-bold text-2xl shrink-0 text-[#efa800]">🏏CricOps</Link>
 
-        {/* Desktop nav links — centered */}
+        {/* Navbar */}
         <div className="hidden md:flex gap-6 absolute left-1/2 -translate-x-1/2">
           {links.map((l) => (
-            <Link key={l.to} to={l.to} className="text-sm hover:text-blue-400 transition">
+            <Link key={l.to} to={l.to} className="text-sm hover:text-[#efa800] transition">
               {l.label}
             </Link>
           ))}
         </div>
 
-        {/* Right side */}
+        {/* Profile */}
         <div className="flex items-center gap-3">
           {user ? (
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((o) => !o)}
-                className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold uppercase"
+                className="w-9 h-9 rounded-full bg-[#efa800] flex items-center justify-center text-xl font-bold uppercase"
               >
                 {user.first_name?.[0] || user.email?.[0]}
               </button>
@@ -64,7 +65,7 @@ export default function Navbar() {
                   <div className="px-4 py-3 border-b">
                     <p className="font-semibold text-sm">{user.first_name} {user.last_name}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded mt-1 inline-block">
+                    <span className="text-xs bg-blue-100 text-[#183153] px-2 py-0.5 rounded mt-1 inline-block">
                       {user.role}
                     </span>
                   </div>
@@ -82,15 +83,15 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <div className="hidden md:flex gap-3 text-sm">
-              <Link to="/login" className="hover:text-blue-400">Login</Link>
-              <Link to="/register" className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700">Register</Link>
+            <div className="hidden md:flex gap-3 text-sm items-center">
+              <Link to="/login" className="hover:text-[#efa800]">Login</Link>
+              <Link to="/register" className="bg-[#efa800] text-[#183153] px-3 py-1 rounded">Register</Link>
             </div>
           )}
 
           {/* Hamburger */}
           <button className="md:hidden" onClick={() => setMenuOpen((o) => !o)}>
-            <span className="text-2xl">{menuOpen ? '✕' : '☰'}</span>
+            <span className="text-2xl text-[#efa800]">{menuOpen ? '✕' : '☰'}</span>
           </button>
         </div>
       </div>
