@@ -37,6 +37,9 @@ class Match(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     standings_applied = models.BooleanField(default=False)
+    is_paused = models.BooleanField(default=False)
+    pause_reason = models.CharField(max_length=100, blank=True)
+
 
     class Meta:
         db_table = 'matches'
@@ -65,7 +68,7 @@ class TeamMatch(models.Model):
     side = models.CharField(max_length=10, choices=TeamMatchSide.choices)
     is_toss_winner = models.BooleanField(default=False)
     toss_decision = models.CharField(max_length=10, choices=TossDecision.choices, blank=True)
-
+    
     class Meta:
         db_table = 'team_matches'
         verbose_name = "Team match"

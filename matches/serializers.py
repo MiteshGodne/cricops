@@ -3,8 +3,10 @@ from .models import Match, TeamMatch, Innings, Delivery, PlayerDelivery
 from .models.deliveries import ExtraType, WicketType
 
 class MatchSerializer(serializers.ModelSerializer):
-    tournament = serializers.ReadOnlyField(source='tournament.name')
+    # tournament = serializers.CharField(source='tournament.tournament_id', read_only = True)
+    tournament_name = serializers.ReadOnlyField(source='tournament.name')
     teams = serializers.SerializerMethodField()
+    primary_umpire_email = serializers.ReadOnlyField(source='primary_umpire.email', default='No Umpire Assigned')
     class Meta:
         model = Match
         fields = '__all__'
@@ -108,11 +110,13 @@ class LiveScoreSerializer(serializers.Serializer):
     total_extras = serializers.IntegerField()
     target_runs = serializers.IntegerField(allow_null=True)
     runs_required = serializers.IntegerField(allow_null=True)
+    required_run_rate = serializers.FloatField(allow_null=True) 
+    current_run_rate = serializers.FloatField()
     current_batsmen = LiveBatsmanSerializer(many=True)
     current_bowler = LiveBowlerSerializer(allow_null=True)    
-    current_run_rate = serializers.FloatField()
-    required_run_rate = serializers.FloatField(allow_null=True) 
-    striker_id = serializers.UUIDField()
-    non_striker_id = serializers.UUIDField()    
+    striker_id = serializers.UUIDField(allow_null=True)
+    non_striker_id = serializers.UUIDField(allow_null=True)    
     bowler_id = serializers.UUIDField()
     overs_remaining = serializers.CharField(allow_null=True)
+    is_paused = serializers.BooleanField()
+    pause_reason = serializers.CharField(allow_blank=True)

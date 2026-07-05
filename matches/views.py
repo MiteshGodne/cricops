@@ -170,6 +170,9 @@ def submit_delivery(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     try:
+        innings = Innings.objects.select_related('match').get(innings_id=serializer.validated_data['innings_id'])
+        if innings.match.is_paused:
+            return Response({'error': 'Match is paused.'}, status=status.HTTP_400_BAD_REQUEST)
         delivery = process_delivery(serializer.validated_data)
         return Response({
             'status': 'delivery recorded',
@@ -226,3 +229,21 @@ def approve_umpire(request):
     umpire.role = 'UMPIRE'
     umpire.save(update_fields=['role'])
     return Response({'approved': str(umpire.user_id), 'role': umpire.role})
+
+@api_view(['POST'])
+@permission_classes([IsUmpireForMatchFromURL])
+def resume_match(request, match_id):
+    match = Match.objects.get(match_id=match_id)
+    match.is_paused = False
+    match.pause_reason = ''
+    match.save(update_fields=['is_paused', 'pause_reason'])
+    return Response({'is_paused': False})
+
+@api_view(['POST'])
+@permission_classes([IsUmpireForMatchFromURL])
+def pause_match(request, match_id):
+    match = Match.objects.get(match_id=match_id)
+    match.is_paused = True
+    match.pause_reason = 'MANUAL'
+    match.save(update_fields=['is_paused', 'pause_reason'])
+    return Response({'is_paused': True})

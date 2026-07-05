@@ -25,17 +25,19 @@ class InningsAdmin(admin.ModelAdmin):
 
 @admin.register(Delivery)
 class DeliveryAdmin(admin.ModelAdmin):
-    list_display = ['innings', 'over_number', 'ball_number', 'runs_scored', 'extra_type', 'is_wicket', 'wicket_type']
+    list_display = ['innings', 'over_number', 'ball_number', 'runs_scored', 'extra_type', 'is_wicket', 'wicket_type', 'created_at']
     list_filter = ['is_wicket', 'extra_type', 'wicket_type']
+    ordering = ['-created_at']
     search_fields = ['innings__match__tournament__name']
     list_select_related = ['innings__match']
 
 
 @admin.register(PlayerDelivery)
 class PlayerDeliveryAdmin(admin.ModelAdmin):
-    list_display = ['player', 'delivery', 'performance_role', 'runs_attributed']
+    list_display = ['player', 'delivery', 'performance_role', 'runs_attributed', 'created_at']
     list_filter = ['performance_role']
     search_fields = ['player__full_name', 'delivery__innings__match__tournament__name']
+    ordering = ['-created_at']
     list_select_related = ['player', 'delivery__innings__match']
     
     

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import MatchViewSet, InningsViewSet, TeamMatchViewSet, DeliveryViewSet, PlayerDeliveryViewSet, submit_delivery, live_score, swap_striker, approve_umpire
+from .views import MatchViewSet, InningsViewSet, TeamMatchViewSet, DeliveryViewSet, PlayerDeliveryViewSet, submit_delivery, live_score, swap_striker, approve_umpire, resume_match, pause_match
 
 router = DefaultRouter()
 router.register('innings', InningsViewSet, basename='innings')
@@ -15,4 +15,6 @@ urlpatterns = [
     path('deliveries/submit/', submit_delivery, name='submit-delivery'),
     path('matches/<uuid:match_id>/swap-striker/', swap_striker, name='swap-striker'),
     path('umpires/approve/', approve_umpire, name='approve-umpire'),
+    path('matches/<uuid:match_id>/resume/', resume_match, name='resume-match'),
+    path('matches/<uuid:match_id>/pause/', pause_match, name='pause-match'),
 ]

@@ -37,6 +37,7 @@ class Delivery(models.Model):
     )
     is_boundary = models.BooleanField(default=False) 
     wicket_type = models.CharField(max_length=20, choices=WicketType.choices, default=WicketType.NONE)
+    created_at = models.DateTimeField(auto_now_add=True)
     is_wicket = models.GeneratedField(
         expression= models.Case(
             models.When(wicket_type='NONE', then=models.Value(False)),
@@ -74,6 +75,7 @@ class PlayerDelivery(models.Model):
     performance_role = models.CharField(max_length=20, choices=DeliveryPerformanceRole.choices)
     runs_attributed = models.SmallIntegerField(default=0)
     dismissal_info = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'player_deliveries'
