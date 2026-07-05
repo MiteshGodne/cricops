@@ -49,13 +49,12 @@ export default function MatchCenterListView() {
 
                   {user?.role === 'UMPIRE' && m.primary_umpire === user.user_id && m.status !== 'COMPLETED' && (
                     <Link to={`/matches/${m.match_id}/score`}>
-                      {m.status === 'SCHEDULED' && <Button variant="primary" size="sm">Submit Toss</Button>}
-                      {m.status === 'LIVE' && <Button variant="primary" size="sm">Score this match</Button>}
+                      {m.status === 'SCHEDULED' && <Button size="sm">Submit Toss</Button>}
+                      {m.status === 'LIVE' && <Button size="sm">Score this match</Button>}
                     </Link>
                   )}
                 </div>
               </div>
-
               {m.status === 'LIVE' && <LiveScoreWidget matchId={m.match_id} />}
             </div>
           );
