@@ -20,7 +20,7 @@ export default function TeamCreationWizard({ onCreated }) {
   };
 
   return (
-    <form onSubmit={submit} className="border p-4 rounded mb-4 max-w-sm">
+    <form onSubmit={submit} className="border-2 border-[#183153] p-4 rounded mb-4 max-w-sm">
       <h3 className="font-semibold mb-2">Create Team</h3>
       <Input label="Team Name" value={form.team_name} onChange={set('team_name')} required />
       <Input label="Short Name" value={form.short_name} onChange={set('short_name')} required maxLength={10} />

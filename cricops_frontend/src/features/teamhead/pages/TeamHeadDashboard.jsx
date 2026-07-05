@@ -5,6 +5,7 @@ import { useFetch } from '../../../hooks/useFetch';
 import { ENDPOINTS } from '../../../api/endpoints';
 import client from '../../../api/client';
 import Button from '../../../components/Button';
+import DeleteButton from '../../../components/DeleteButton';
 import Input from '../../../components/Input';
 import Skeleton from '../../../components/Skeleton';
 import toast from 'react-hot-toast';
@@ -124,18 +125,18 @@ export default function TeamHeadDashboard() {
   return (
     <div className="max-w-5xl mx-auto pb-12">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Team Head Dashboard</h2>
+        <h2 className="text-2xl font-bold text-[#183153]">My Dashboard</h2>
         <Button onClick={() => openTeamForm()}>+ New Team</Button>
       </div>
 
       {/* Team Form */}
       {showTeamForm && (
-        <form onSubmit={saveTeam} className="border rounded-xl p-5 mb-6 bg-white shadow-sm max-w-xl">
+        <form onSubmit={saveTeam} className="border-2 border-[#183153] rounded-xl p-5 mb-6 bg-white shadow-sm max-w-xl">
           <h3 className="font-semibold mb-4">{editTeamId ? 'Edit Team' : 'Create Team'}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Team Name *" value={teamForm.team_name} onChange={setTF('team_name')} required />
             <Input label="Short Name (max 10) *" value={teamForm.short_name} onChange={setTF('short_name')} maxLength={10} required />
-            <Input label="City *" value={teamForm.city} onChange={setTF('city')} required />
+            <Input label="City" value={teamForm.city} onChange={setTF('city')} />
             <Input label="State *" value={teamForm.state} onChange={setTF('state')} required />
             <Input label="Contact Email" type="email" value={teamForm.contact_email} onChange={setTF('contact_email')} />
             <Input label="Coach Name" value={teamForm.coach_name} onChange={setTF('coach_name')} />
@@ -161,7 +162,7 @@ export default function TeamHeadDashboard() {
               <div key={t.team_id} className={`border-2 rounded-xl p-5 bg-white shadow-sm transition-all ${
                 selectedTeam?.team_id === t.team_id ? 'border-blue-500' : 'border-gray-200'
               }`}>
-                <div className="flex justify-between items-start mb-3">
+                <div className="flex justify-between items-start mb-3 capitalize">
                   <div>
                     <h3 className="text-lg font-bold">{t.team_name}</h3>
                     <p className="text-sm text-gray-500">{t.short_name} · {t.city}, {t.state}</p>
@@ -169,8 +170,8 @@ export default function TeamHeadDashboard() {
                     {t.contact_email && <p className="text-xs text-gray-400">📧 {t.contact_email}</p>}
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="secondary" className="text-xs" onClick={() => openTeamForm(t)}>Edit</Button>
-                    <Button variant="danger" className="text-xs" onClick={() => deleteTeam(t.team_id)}>Delete</Button>
+                    <Button variant="secondary" className="text-xs" onClick={() => openTeamForm(t)}>Edit &#9998; </Button>
+                    <DeleteButton variant="danger" className="text-xs" onClick={() => deleteTeam(t.team_id)}>Delete</DeleteButton>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -259,8 +260,8 @@ export default function TeamHeadDashboard() {
                                 setPlayerForm({ full_name: p.full_name, date_of_birth: p.date_of_birth, player_role: p.player_role, nationality: p.nationality });
                                 setEditPlayer(p);
                                 setShowPlayerForm(true);
-                              }}>Edit</Button>
-                            <Button variant="danger" className='bg-red-100' onClick={() => deletePlayer(p.player_id)}>Delete</Button>
+                              }}>Edit &#9998;</Button>
+                            <DeleteButton variant="danger" className='bg-red-100' onClick={() => deletePlayer(p.player_id)}>Delete</DeleteButton>
                           </div>
                         </td>
                       </tr>
@@ -287,14 +288,14 @@ function SquadLinks({ team }) {
         📋 Squad Manager ▾
       </Button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-20 min-w-48">
+        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg z-20 min-w-48">
           {tournaments.length === 0 ? (
             <p className="p-3 text-xs text-gray-500">No tournaments found</p>
           ) : (
-            tournaments.map((t) => (
+            tournaments.filter((t)=> !t.status.includes('CANCELLED', 'APPLICATION_CLOSED')).map((t) => (
               <Link key={t.tournament_id}
                 to={`/teamhead/teams/${team.team_id}/squad/${t.tournament_id}`}
-                className="block px-4 py-2 text-sm hover:bg-gray-50 border-b last:border-0"
+                className="block px-4 py-2 text-xs hover:bg-gray-50 rounded-lg border-b border-[#efa800] hover:text-[#efa800] last:border-0"
                 onClick={() => setOpen(false)}>
                 {t.name}
                 <span className="text-xs text-gray-400 ml-1">({t.status.replace(/_/g,' ')})</span>

@@ -3,6 +3,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import Skeleton from '../../../components/Skeleton';
+import Button from '../../../components/Button';
 import ApplicationStatusBadge from '../components/ApplicationStatusBadge';
 
 export default function TournamentBrowse() {
@@ -25,15 +26,15 @@ export default function TournamentBrowse() {
         <h2 className="text-2xl font-bold">Tournaments</h2>
         {user?.role === 'ORGANIZER' && (
           <Link to="/organizer/tournaments/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-            + New Tournament
+            className="px-4 py-2 rounded-lg text-sm transition">
+              <Button> + New Tournament </Button>
           </Link>
         )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tournaments.map((t) => (
           <Link to={`/tournaments/${t.tournament_id}`} key={t.tournament_id}
-            className="border rounded-xl p-5 hover:shadow-md transition-all hover:-translate-y-0.5 bg-white group">
+            className="border-l-5 border-b-5 border-1 border-[#183153] rounded-xl p-5 hover:shadow-md transition-all hover:-translate-y-0.5 bg-white group">
             <div className="flex justify-between items-start mb-3">
               <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition">{t.name}</h3>
               <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[t.status] || 'bg-gray-100'}`}>

@@ -17,7 +17,7 @@ export default function VenueListView() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Venues</h2>
-        {isOrganizer(user) && <Button onClick={() => setShowForm(true)}>Add Venue</Button>}
+        {isOrganizer(user) && <Button onClick={() => setShowForm(true)}> + Add Venue</Button>}
       </div>
       {loading ? <p>Loading...</p> : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

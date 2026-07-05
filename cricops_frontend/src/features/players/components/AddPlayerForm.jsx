@@ -32,7 +32,7 @@ export default function AddPlayerForm({ teamId, onCreated }) {
       </select>
       <Input label="Nationality" value={form.nationality} onChange={set('nationality')} />
       {error && <p className="text-red-500 text-xs mb-2">{JSON.stringify(error)}</p>}
-      <Button type="submit">Add Player</Button>
+      <Button type="submit">+ Add Player</Button>
     </form>
   );
 }

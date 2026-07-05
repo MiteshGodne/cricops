@@ -42,7 +42,7 @@ export default function ManageSquad() {
           {players.map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
         </select>
         <input className="border rounded px-3 py-2 text-sm w-24" type="number" placeholder="Jersey #" value={jersey} onChange={(e) => setJersey(e.target.value)} />
-        <Button onClick={addToSquad}>Add to Squad</Button>
+        <Button onClick={addToSquad}>+ Add to Squad</Button>
       </div>
       {error && <p className="text-red-500 text-sm">{error}</p>}
       <TournamentSquadGrid squad={squad} />

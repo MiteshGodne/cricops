@@ -16,7 +16,7 @@ export default function TeamDashboard() {
   if (loading) return <Skeleton rows={4} />;
 
   return (
-    <div>
+    <div className='border-2'>
       <h2 className="text-xl font-semibold mb-4">My Teams</h2>
       {myTeams.map((t) => (
         <div key={t.team_id} className="border p-3 rounded mb-2 flex justify-between items-center">
