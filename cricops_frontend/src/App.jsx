@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes/AppRoutes';
 import { Toaster } from 'react-hot-toast';
+import Footer from './components/Footer';
 
 export default function App() {
   return (
@@ -11,9 +12,10 @@ export default function App() {
       <AuthProvider>
         <Navbar />
         <Toaster position="top-right" />
-        <main className="max-w-6xl mx-auto p-4">
+        <main className="max-w-6xl mx-auto min-h-screen p-4">
           <AppRoutes />
         </main>
+        <Footer />
       </AuthProvider>
     </BrowserRouter>
   );
