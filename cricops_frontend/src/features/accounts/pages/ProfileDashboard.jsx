@@ -4,6 +4,7 @@ import client from '../../../api/client';
 import { ENDPOINTS } from '../../../api/endpoints';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
+import BackButton from '../../../components/BackButton';
 
 export default function ProfileDashboard() {
   const { user, refreshUser } = useAuth();
@@ -57,7 +58,7 @@ export default function ProfileDashboard() {
 
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+        <div className="w-16 h-16 rounded-full bg-[#efa800] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
           {avatarSrc ? <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" /> : (user.first_name?.[0] || '?')}
         </div>
         {editing && (
@@ -89,9 +90,9 @@ export default function ProfileDashboard() {
           <Input label="Last Name" value={form.last_name} onChange={set('last_name')} required />
           <Input label="Phone" value={form.phone} onChange={set('phone')} required />
           {error && <p className="text-red-500 text-xs mb-2">{JSON.stringify(error)}</p>}
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 items-center">
             <Button type="submit">Save</Button>
-            <Button type="button" variant="secondary" onClick={() => { setEditing(false); setPreview(null); setAvatar(null); }}>Cancel</Button>
+            <BackButton type="button" onClick={() => { setEditing(false); setPreview(null); setAvatar(null); }}>Cancel</BackButton>
           </div>
         </form>
       )}
