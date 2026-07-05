@@ -3,6 +3,7 @@ import { useFetch } from '../../../hooks/useFetch';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { useAuth } from '../../../context/AuthContext';
 import Button from '../../../components/Button';
+import DeleteButton from '../../../components/DeleteButton';
 import Skeleton from '../../../components/Skeleton';
 import client from '../../../api/client';
 import toast from 'react-hot-toast';
@@ -27,7 +28,7 @@ export default function OrganizerDashboard() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Organizer Dashboard</h2>
+        <h2 className="text-3xl font-bold hover:text-[#efa800] text-[#183153]">My Dashboard</h2>
         <Link to="/organizer/tournaments/new">
           <Button>+ New Tournament</Button>
         </Link>
@@ -44,14 +45,14 @@ export default function OrganizerDashboard() {
                 <p className="text-sm text-gray-600">Category : {t.category} · {t.status}</p>
                 <p className="text-xs text-gray-600">📅Start Date : {t.start_date} → {'TBD'}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Link to={`/organizer/tournaments/${t.tournament_id}/manage`}>
-                  <Button variant="secondary">Manage</Button>
+                  <Button variant="secondary" className='h-9'>Manage &#128295;</Button>
                 </Link>
                 <Link to={`/organizer/tournaments/${t.tournament_id}/edit`}>
-                  <Button variant="secondary">Edit</Button>
+                  <Button variant="secondary" className='h-9'>Edit &#9998;</Button>
                 </Link>
-                <Button variant="danger" onClick={() => deleteTournament(t.tournament_id)}>Delete</Button>
+                <DeleteButton variant="danger" onClick={() => deleteTournament(t.tournament_id)}>Delete</DeleteButton>
               </div>
             </div>
           ))}
