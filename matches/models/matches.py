@@ -33,7 +33,7 @@ class Match(models.Model):
     end_date = models.DateTimeField(null=True, blank=True)
     innings_count = models.SmallIntegerField(default=2)
     status = models.CharField(max_length=20, choices=MatchStatus.choices, default=MatchStatus.SCHEDULED)
-    result_note = models.TextField(blank=True)
+    result_note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     standings_applied = models.BooleanField(default=False)
