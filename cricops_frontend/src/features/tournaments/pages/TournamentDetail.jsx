@@ -6,8 +6,10 @@ import { useAuth } from '../../../context/AuthContext';
 import StandingsTable from '../components/StandingsTable';
 import ApplicationStatusBadge from '../components/ApplicationStatusBadge';
 import Skeleton from '../../../components/Skeleton';
+import MatchResultBox from '../../matches/pages/MatchResultBox';
+import LiveScoreWidget from '../../matches/components/LiveScoreWidget';
 
-const TABS = ['overview', 'matches', 'teams','regulations', 'groups', 'standings'];
+const TABS = ['overview', 'matches', 'teams', 'regulations', 'groups', 'standings'];
 
 export default function TournamentDetail() {
   const { id } = useParams();
@@ -68,9 +70,8 @@ export default function TournamentDetail() {
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg overflow-x-auto">
         {TABS.map((tb) => (
           <button key={tb} onClick={() => setTab(tb)}
-            className={`px-4 py-2 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all ${
-              tab === tb ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'
-            }`}>
+            className={`px-4 py-2 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all ${tab === tb ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'
+              }`}>
             {tb}
           </button>
         ))}
@@ -80,10 +81,10 @@ export default function TournamentDetail() {
       {tab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InfoCard title="Tournament Info">
-            <Row label="Format" value={reg?.tournament_format?.replace(/_/g,' ')} />
+            <Row label="Format" value={reg?.tournament_format?.replace(/_/g, ' ')} />
             <Row label="Match Format" value={reg?.match_format} />
             <Row label="Start Date" value={t.start_date} />
-            <Row label="Status" value={t.status.replace(/_/g,' ')} />
+            <Row label="Status" value={t.status.replace(/_/g, ' ')} />
           </InfoCard>
           <InfoCard title="Application Window">
             <Row label="Opens" value={t.application_starts_from ? new Date(t.application_starts_from).toLocaleString() : 'N/A'} />
@@ -117,8 +118,8 @@ export default function TournamentDetail() {
 
       {/* REGULATIONS */}
       {tab === 'regulations' && reg && (
-        <div className="space-y-4">
-          <InfoCard title="Match Regulation">
+        <div className="grid grid-cols-3 gap-3">
+          <InfoCard title="Match Regulations">
             <Row label="Match Format" value={reg.match_format} />
             <Row label="Overs/Innings" value={reg.overs_per_innings ?? 'N/A (Test)'} />
             <Row label="Innings/Team" value={reg.innings_per_team} />
@@ -133,7 +134,7 @@ export default function TournamentDetail() {
             <Row label="Timed Out (sec)" value={reg.timed_out_limit} />
           </InfoCard>
           <InfoCard title="Tournament Structure">
-            <Row label="Format" value={reg.tournament_format.replace(/_/g,' ')} />
+            <Row label="Format" value={reg.tournament_format.replace(/_/g, ' ')} />
             <Row label="Min Teams" value={reg.min_teams} />
             <Row label="Max Teams" value={reg.max_teams ?? 'No limit'} />
             {/* <Row label="Teams/Group" value={reg.teams_per_group ?? 'N/A'} />
@@ -153,18 +154,20 @@ export default function TournamentDetail() {
 
       {/* TEAMS */}
       {tab === 'teams' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {apps.length === 0 && <p className="text-gray-500">No teams accepted yet.</p>}
-          {apps.map((a) => (
-            <div key={a.application_id} className="border rounded-lg p-4 flex justify-between items-center hover:shadow transition">
-              <div>
-                <p className="font-semibold">{a.registered_name}</p>
-                <p className="text-sm text-gray-500">{a.registered_short_name}</p>
+        <>
+          {apps.length === 0 ? <p className="text-gray-500">No teams accepted yet.</p> : <p className='pb-2'>Teams & Application Statuses </p>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {apps.map((a) => (
+              <div key={a.application_id} className="bg-blue-50 border-blue-300 border-l-5 border-b-5 rounded-lg p-4 flex justify-between items-center hover:shadow transition">
+                <div>
+                  <p className="font-semibold">{a.registered_name}</p>
+                  <p className="text-sm text-gray-500">{a.registered_short_name}</p>
+                </div>
+                <ApplicationStatusBadge status={a.status} />
               </div>
-              <ApplicationStatusBadge status={a.status} />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* GROUPS */}
@@ -190,7 +193,7 @@ function GroupCard({ group, tournamentId }) {
   const { data } = useFetch(`${ENDPOINTS.SQUADS}?tournament=${tournamentId}`);
   const allSquads = Array.isArray(data) ? data : data?.results || [];
   return (
-    <div className="border rounded-lg p-4">
+    <div className="border-[#183153] border-l-5 border-b-5 rounded-lg p-4">
       <h3 className="font-semibold text-lg mb-2">{group.name}</h3>
     </div>
   );
@@ -198,23 +201,33 @@ function GroupCard({ group, tournamentId }) {
 
 function MatchCard({ match }) {
   const statusColors = {
-    SCHEDULED: 'bg-blue-50 border-blue-200',
+    SCHEDULED: 'bg-blue-50 border-blue-300',
     LIVE: 'bg-green-50 border-green-300',
-    COMPLETED: 'bg-gray-50 border-gray-200',
-    ABANDONED: 'bg-red-50 border-red-200',
+    COMPLETED: 'bg-orange-50 border-orange-300',
+    ABANDONED: 'bg-red-50 border-red-300',
   };
   const teamA = match.teams?.[0] || 'TBD', teamB = match.teams?.[1] || 'TBD';
   return (
-    <div className={`border rounded-lg p-4 ${statusColors[match.status] || ''}`}>
+    <div className={`border-0 border-l-5 border-b-5 rounded-lg p-4 ${statusColors[match.status] || ''}`}>
       <div className="flex justify-between items-center">
-        <div>
-          <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
-          <p className="font-semibold mt-1">{teamA} vs {teamB}</p>
-          <p className="text-sm text-gray-500">{match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
-        </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${match.status === 'LIVE' ? 'bg-green-500 text-white animate-pulse' :
-          match.status === 'COMPLETED' ? 'bg-gray-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
-        </span>
+        {match.status === 'SCHEDULED' && (
+          <div>
+            <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
+            <p className="font-semibold mt-1">{teamA} vs {teamB}</p>
+            <p className="text-sm text-gray-500">Scheduled for : {match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
+          </div>
+        )}
+        {match.status === 'LIVE' && <LiveScoreWidget matchId={match.match_id} />}
+        {match.status === 'COMPLETED' && <MatchResultBox match={match} teamA={teamA} teamB={teamB} />}
+        {match.status === 'ABANDONED' && (
+          <div>
+            <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
+            <p className="font-semibold mt-1">{teamA} vs {teamB}</p>
+            <p className="text-sm text-gray-500">Scheduled match of{match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'} is Abandoned !!</p>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-red-500 text-white animate-pulse`}></span>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -222,8 +235,8 @@ function MatchCard({ match }) {
 
 function InfoCard({ title, children }) {
   return (
-    <div className="border rounded-xl p-5 bg-white shadow-sm">
-      <h3 className="font-semibold text-gray-800 mb-3 pb-2 border-b">{title}</h3>
+    <div className="border-blue-300 border-l-5 border-b-5 rounded-xl p-5 bg-blue-50 shadow-sm">
+      <h3 className="font-semibold text-gray-900 mb-3 pb-2 border-b">{title}</h3>
       <div className="space-y-2">{children}</div>
     </div>
   );
@@ -232,7 +245,7 @@ function InfoCard({ title, children }) {
 function Row({ label, value }) {
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-gray-700">{label}</span>
       <span className="font-medium text-gray-800">{value ?? '—'}</span>
     </div>
   );
