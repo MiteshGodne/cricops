@@ -168,23 +168,30 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
 def finalize_match_result(match):
     innings_qs = Innings.objects.filter(match=match).order_by('innings_number')
     if innings_qs.count() < match.innings_count or not all(i.is_completed for i in innings_qs):
-        return    
+        return
     first, second = innings_qs[0], innings_qs[1]
+
     if first.total_score > second.total_score:
         match.winner_team, match.runnerup_team, match.result_type = first.batting_team, second.batting_team, 'WIN'
+        margin = first.total_score - second.total_score
+        match.result_note = f"{first.batting_team.team_name} won by {margin} run{'s' if margin != 1 else ''}"
     elif second.total_score > first.total_score:
         match.winner_team, match.runnerup_team, match.result_type = second.batting_team, first.batting_team, 'WIN'
+        max_wickets = match.tournament.regulation.players_per_side - 1
+        wickets_left = max_wickets - second.total_wickets
+        match.result_note = f"{second.batting_team.team_name} won by {wickets_left} wicket{'s' if wickets_left != 1 else ''}"
     else:
         match.result_type = 'TIE'
         match.winner_team = None
         match.runnerup_team = None
+        match.result_note = 'Match tied'
 
     match.status = 'COMPLETED'
     match.end_date = timezone.now()
-    match.save(update_fields=['winner_team', 'runnerup_team', 'result_type', 'status', 'end_date'])
+    match.save(update_fields=['winner_team', 'runnerup_team', 'result_type', 'result_note', 'status', 'end_date'])
     if match.primary_umpire:
         match.primary_umpire.role = "PENDING"
-        match.primary_umpire.save(update_fields = ['role'])
+        match.primary_umpire.save(update_fields=['role'])
     update_standings(match)
             
 def calculate_nrr(tournament, team):
@@ -245,8 +252,6 @@ def update_live_state(innings, striker, non_striker, bowler):
             'current_bowler': bowler,
         }
     )
-    
-#--------------------------------------------------------------------------
     
 def calculate_overs(legal_ball_count):
     return f"{legal_ball_count // 6}.{legal_ball_count % 6}"
@@ -363,6 +368,7 @@ def get_live_score(match):
         'bowler_id': str(live_state.current_bowler_id),
         'overs_remaining': overs_remaining,
         'out_player_ids': list(PlayerDelivery.objects.filter(delivery__innings=innings, dismissal_info__gt='').values_list('player_id', flat=True).distinct()),
+        'result_note': match.result_note or '',
         'is_paused': match.is_paused,
         'pause_reason': match.pause_reason,
     }

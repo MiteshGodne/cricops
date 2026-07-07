@@ -120,3 +120,5 @@ class LiveScoreSerializer(serializers.Serializer):
     overs_remaining = serializers.CharField(allow_null=True)
     is_paused = serializers.BooleanField()
     pause_reason = serializers.CharField(allow_blank=True)
+    result_note = serializers.CharField()
+    out_player_ids = serializers.ListField(child=serializers.UUIDField())
