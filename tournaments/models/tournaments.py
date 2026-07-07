@@ -65,6 +65,10 @@ class Tournament(models.Model):
     application_deadline = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    winner_team = models.ForeignKey(
+        'teams.Team', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='tournaments_won'
+    )
 
     class Meta:
         db_table = 'tournaments'
