@@ -62,7 +62,7 @@ export default function UmpireScoringConsole() {
       setBowler(prev => score?.bowler_id ?? prev);
     }
   }, [score?.striker_id, score?.non_striker_id, score?.bowler_id, score?.is_paused]);
-  
+
   useEffect(() => {
     if (!score || score?.is_paused) return;
     const ids = score.current_batsmen.map((b) => b.player_id);
@@ -95,22 +95,22 @@ export default function UmpireScoringConsole() {
           <div className="text-amber-800 text-sm">
             <span className="font-bold">⏸️ Match Paused: </span>
             {score.pause_reason === 'WICKET' ? 'Select the next batsman below, then click Resume.' :
-             score.pause_reason === 'INNINGS_END' ? 'Innings Complete. Select the new players below, then click Resume.' :
-             'Scoring is paused. Make adjustments below.'}
+              score.pause_reason === 'INNINGS_END' ? 'Innings Complete. Select the new players below, then click Resume.' :
+                'Scoring is paused. Make adjustments below.'}
           </div>
-          <Button 
+          <Button
             variant="primary"
             onClick={async () => {
               await client.post(ENDPOINTS.RESUME_MATCH(matchId), {
                 striker_id: striker,
                 non_striker_id: nonStriker,
                 bowler_id: bowler
-              });              
-              if (score.pause_reason === 'INNINGS_END') { 
-                setStriker(''); 
-                setNonStriker(''); 
-                setBowler(''); 
-                if (typeof setKey === 'function') setKey(k => k + 1); 
+              });
+              if (score.pause_reason === 'INNINGS_END') {
+                setStriker('');
+                setNonStriker('');
+                setBowler('');
+                if (typeof setKey === 'function') setKey(k => k + 1);
               }
               refetchScore();
             }}
@@ -147,6 +147,7 @@ export default function UmpireScoringConsole() {
               onDelivered={() => {
                 setKey((k) => k + 1);
                 refetchScore();
+                refetchMatch();
               }}
             />
           )}
