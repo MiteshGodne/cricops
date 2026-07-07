@@ -237,6 +237,11 @@ def resume_match(request, match_id):
     match.is_paused = False
     match.pause_reason = ''
     match.save(update_fields=['is_paused', 'pause_reason'])
+    live_state = MatchLiveState.objects.get(match=match)
+    live_state.current_striker_id = request.data.get('striker_id') or live_state.current_striker_id
+    live_state.current_non_striker_id = request.data.get('non_striker_id') or live_state.current_non_striker_id
+    live_state.current_bowler_id = request.data.get('bowler_id') or live_state.current_bowler_id
+    live_state.save(update_fields=['current_striker','current_non_striker','current_bowler'])
     return Response({'is_paused': False})
 
 @api_view(['POST'])
