@@ -6,10 +6,10 @@ import Input from '../../../components/Input';
 import Button from '../../../components/Button';
 import toast from 'react-hot-toast';
 
-const CATEGORIES = ['INTER_COLLEGE','INTER_SCHOOL','CLUB_LEVEL','DISTRICT_LEVEL','STATE_LEVEL','NATIONAL_LEVEL','CORPORATE_LEVEL','OPEN'];
-const FORMATS = ['T20','ODI','T10','CUSTOM','TEST'];
-const T_FORMATS = ['LEAGUE','KNOCKOUT','GROUP_KNOCKOUT','DOUBLE_ELIMINATION'];
-const TIEBREAKERS = ['NRR','H2H','BOWL_OUT','SUPER_OVER','MOST_WINS'];
+const CATEGORIES = ['INTER_COLLEGE', 'INTER_SCHOOL', 'CLUB_LEVEL', 'DISTRICT_LEVEL', 'STATE_LEVEL', 'NATIONAL_LEVEL', 'CORPORATE_LEVEL', 'OPEN'];
+const FORMATS = ['T20', 'ODI', 'T10', 'CUSTOM', 'TEST'];
+const T_FORMATS = ['LEAGUE', 'KNOCKOUT', 'GROUP_KNOCKOUT', 'DOUBLE_ELIMINATION'];
+const TIEBREAKERS = ['NRR', 'H2H', 'BOWL_OUT', 'SUPER_OVER', 'MOST_WINS'];
 
 export default function TournamentForm() {
   const { id } = useParams();
@@ -43,12 +43,12 @@ export default function TournamentForm() {
       setForm({
         name: data.name, category: data.category,
         start_date: data.start_date,
-        application_starts_from: data.application_starts_from?.slice(0,16) || '',
-        application_deadline: data.application_deadline?.slice(0,16) || '',
+        application_starts_from: data.application_starts_from?.slice(0, 16) || '',
+        application_deadline: data.application_deadline?.slice(0, 16) || '',
       });
       setRegId(data.regulation);
       setExistingTournamentStatus(data.status);
-      client.get(`${ENDPOINTS.REGULATIONS}${data.regulation}/`).then(({ data: r }) => setReg({...reg, ...r}));
+      client.get(`${ENDPOINTS.REGULATIONS}${data.regulation}/`).then(({ data: r }) => setReg({ ...reg, ...r }));
     });
   }, [id, isEdit]);
 
@@ -75,7 +75,7 @@ export default function TournamentForm() {
     return Object.keys(e).length === 0;
   };
 
-  const canEditReg = !isEdit || !['ONGOING','COMPLETED'].includes(existingTournamentStatus);
+  const canEditReg = !isEdit || !['ONGOING', 'COMPLETED'].includes(existingTournamentStatus);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -138,7 +138,7 @@ export default function TournamentForm() {
             <div>
               <label className="text-sm font-medium block mb-1">Category *</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.category} onChange={setF('category')}>
-                {CATEGORIES.map((c) => <option key={c} value={c} >{c.replace(/_/g,' ')}</option>)}
+                {CATEGORIES.map((c) => <option key={c} value={c} >{c.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <Input label="Start Date *" type="date" value={form.start_date} onChange={setF('start_date')} error={errors.start_date} required />
@@ -164,11 +164,12 @@ export default function TournamentForm() {
                 )}
                 <Input label="Innings/Team" type="number" value={reg.innings_per_team} onChange={setR('innings_per_team')} min={1} />
                 <Input label="Players/Side" type="number" value={reg.players_per_side} onChange={setR('players_per_side')} min={1} max={15} />
-                <Input label="Max Overs/Bowler" type="number" value={reg.max_overs_per_bowler} onChange={setR('max_overs_per_bowler')} />
-                <Input label="Max Bouncers/Over" type="number" value={reg.max_bouncers_per_over} onChange={setR('max_bouncers_per_over')} />
-                <Input label="Wide Value (runs)" type="number" value={reg.wide_value} onChange={setR('wide_value')} />
-                <Input label="No Ball Value (runs)" type="number" value={reg.noball_value} onChange={setR('noball_value')} />
-                <Input label="DRS/Innings" type="number" value={reg.drs_per_innings} onChange={setR('drs_per_innings')} />
+                <Input label="Allowed Player's Age (Minimum) *" type="number" value={reg.player_min_age} onChange={setR('player_min_age')} min={5} max={100} required />
+                <Input label="Max Overs/Bowler" type="number" value={reg.max_overs_per_bowler} onChange={setR('max_overs_per_bowler')} min={1} />
+                <Input label="Max Bouncers/Over" type="number" value={reg.max_bouncers_per_over} onChange={setR('max_bouncers_per_over')} min={0} />
+                <Input label="Wide Value (runs)" type="number" value={reg.wide_value} onChange={setR('wide_value')} min={0} />
+                <Input label="No Ball Value (runs)" type="number" value={reg.noball_value} onChange={setR('noball_value')} min={0} />
+                <Input label="DRS/Innings" type="number" value={reg.drs_per_innings} onChange={setR('drs_per_innings')} min={0} />
                 <Input label="Timed Out Limit (sec)" type="number" value={reg.timed_out_limit} onChange={setR('timed_out_limit')} />
                 <CheckRow label="Free Hit on No Ball" checked={reg.noball_free_hit_enabled} onChange={setR('noball_free_hit_enabled')} />
                 <CheckRow label="Super Over Enabled" checked={reg.super_over_enabled} onChange={setR('super_over_enabled')} />
@@ -184,11 +185,11 @@ export default function TournamentForm() {
                 <div>
                   <label className="text-sm font-medium block mb-1">Tournament Format *</label>
                   <select className="w-full border rounded px-3 py-2 text-sm" value={reg.tournament_format} onChange={setR('tournament_format')}>
-                    {T_FORMATS.map((f) => <option key={f} value={f}>{f.replace(/_/g,' ')}</option>)}
+                    {T_FORMATS.map((f) => <option key={f} value={f}>{f.replace(/_/g, ' ')}</option>)}
                   </select>
                 </div>
-                <Input label="Min Teams" type="number" value={reg.min_teams} onChange={setR('min_teams')} />
-                <Input label="Max Teams" type="number" value={reg.max_teams} onChange={setR('max_teams')} placeholder="Leave blank = no limit" />
+                <Input label="Min Teams" type="number" value={reg.min_teams} onChange={setR('min_teams')} min={2} />
+                <Input label="Max Teams" type="number" value={reg.max_teams} onChange={setR('max_teams')} placeholder="Leave blank = no limit" min={2} />
                 {['GROUP_KNOCKOUT'].includes(reg.tournament_format) && (
                   <>
                     <Input label="Teams/Group" type="number" value={reg.teams_per_group} onChange={setR('teams_per_group')} />
@@ -199,19 +200,19 @@ export default function TournamentForm() {
             </Section>
 
             <Section title="Points System">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <Input label="Win" type="number" value={reg.points_for_win} onChange={setR('points_for_win')} />
-                <Input label="Loss" type="number" value={reg.points_for_loss} onChange={setR('points_for_loss')} />
-                <Input label="Tie" type="number" value={reg.points_for_tie} onChange={setR('points_for_tie')} />
+              <div className="grid grid-cols-3 gap-4">
+                <Input label="Win" type="number" value={reg.points_for_win} onChange={setR('points_for_win')} min={0} />
+                <Input label="Loss" type="number" value={reg.points_for_loss} onChange={setR('points_for_loss')} min={0} />
+                <Input label="Tie" type="number" value={reg.points_for_tie} onChange={setR('points_for_tie')} min={0} />
                 <Input label="No Result" type="number" value={reg.points_for_no_result} onChange={setR('points_for_no_result')} />
                 <Input label="Forfeit Penalty" type="number" value={reg.points_penalty_for_forfeit} onChange={setR('points_penalty_for_forfeit')} />
               </div>
               <div className="mt-3">
-                <label className="text-sm font-medium block mb-1">Tiebreaker Order</label>
-                <div className="flex flex-wrap gap-2">
+                <label className="text-sm font-medium block mb-1">Tiebreaker</label>
+                <div className="flex gap-2 item-center">
                   {TIEBREAKERS.map((tb) => (
                     <label key={tb} className="flex items-center gap-1 text-sm cursor-pointer">
-                      <input type="checkbox"
+                      <CheckRow
                         checked={reg.tiebreaker_order?.includes(tb)}
                         onChange={(e) => {
                           const arr = reg.tiebreaker_order || [];
