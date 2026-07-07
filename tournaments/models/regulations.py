@@ -72,6 +72,8 @@ class Regulation(models.Model):
                 condition=(models.Q(match_format='TEST', overs_per_innings__isnull=True) | (~models.Q(match_format='TEST') & models.Q(overs_per_innings__gt=0))),
                 name='overs_per_innings_valid_per_format'
             ),
+            models.CheckConstraint(
+                condition=models.Q(player_min_age__isnull=True) | models.Q(player_min_age__gte=0), name='player_min_age_non_negative'),
         ]
         
     def clean(self):
@@ -79,6 +81,8 @@ class Regulation(models.Model):
             raise ValidationError({'overs_per_innings': 'Required and must be > 0 for non-Test formats (including Custom).'})
         if self.overs_per_innings is not None and self.overs_per_innings <= 0:
             raise ValidationError({'overs_per_innings': 'Must be greater than 0.'})
+        if self.player_min_age is not None and self.player_min_age < 0:
+            raise ValidationError({'player_min_age': 'Must be >= 0.'})
 
     def __str__(self):
         return f"{self.match_format} — {self.tournament_format} (Reg #{self.regulation_id})"
