@@ -48,6 +48,7 @@ class Regulation(models.Model):
     teams_qualifying_per_group = models.SmallIntegerField(null=True, blank=True)
     min_teams = models.SmallIntegerField(default=2)
     max_teams = models.SmallIntegerField(null=True, blank=True)
+    player_min_age = models.SmallIntegerField(default=16)
 
     ''' Points & standings rules '''
     points_for_win = models.SmallIntegerField(default=2)
