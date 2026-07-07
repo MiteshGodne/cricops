@@ -173,7 +173,7 @@ export default function ManageSquad() {
                   <option value="">Select player</option>
                   {available.map((p) => (
                     <option key={p.player_id} value={p.player_id}>
-                      {p.full_name.upper()} ({p.player_role})
+                      {p.full_name} ({p.player_role})
                     </option>
                   ))}
                 </select>

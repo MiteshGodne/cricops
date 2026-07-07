@@ -15,7 +15,6 @@ const PLAYER_ROLES = ['BATSMAN','BOWLER','ALL_ROUNDER','WICKETKEEPER'];
 export default function TeamHeadDashboard() {
   const { user } = useAuth();
 
-  // Only fetch MY teams via team_head filter
   const { data: teamsData, loading: teamsLoading, refetch: refetchTeams } = useFetch(
     user ? `${ENDPOINTS.TEAMS}?team_head=${user.user_id}` : null
   );
@@ -136,7 +135,7 @@ export default function TeamHeadDashboard() {
           <div className="grid grid-cols-2 gap-3">
             <Input label="Team Name *" value={teamForm.team_name} onChange={setTF('team_name')} required />
             <Input label="Short Name (max 10) *" value={teamForm.short_name} onChange={setTF('short_name')} maxLength={10} required />
-            <Input label="City" value={teamForm.city} onChange={setTF('city')} />
+            <Input label="City *" value={teamForm.city} onChange={setTF('city')} required/>
             <Input label="State *" value={teamForm.state} onChange={setTF('state')} required />
             <Input label="Contact Email" type="email" value={teamForm.contact_email} onChange={setTF('contact_email')} />
             <Input label="Coach Name" value={teamForm.coach_name} onChange={setTF('coach_name')} />
