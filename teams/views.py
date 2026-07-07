@@ -82,6 +82,14 @@ class TournamentSquadViewSet(viewsets.ModelViewSet):
             max_xi = tournament.regulation.players_per_side
             if xi_count >= max_xi:
                 return Response({'error': f'Playing XI limit ({max_xi}) reached for this team.'}, status=400)
+        
+        player_min_age = tournament.regulation.player_min_age
+        if player_min_age is not None:
+            start = tournament.start_date
+            dob = player.date_of_birth
+            age = start.year - dob.year - ((start.month, start.day) < (dob.month, dob.day))
+            if age < player_min_age:
+                return Response({'error': f'Player must be at least {player_min_age} years old as of tournament start.'}, status=400)
 
         squad_role = serializer.validated_data.get('squad_role', 'PLAYER')
         if squad_role == 'CAPTAIN':
