@@ -49,6 +49,17 @@ class TournamentViewSet(viewsets.ModelViewSet):
             is_primary=True
         )
         
+def perform_update(self, serializer):
+    old_status = self.get_object().status
+    tournament = serializer.save()
+    if tournament.status == 'COMPLETED' and old_status != 'COMPLETED':
+        top_standing = TournamentStanding.objects.filter(
+            tournament=tournament
+        ).order_by('-points', '-net_run_rate').first()
+        if top_standing:
+            tournament.winner_team = top_standing.team
+            tournament.save(update_fields=['winner_team'])
+        
     def get_queryset(self):
         qs = super().get_queryset()
         for t in qs.filter(status='ACCEPTING_APPLICATIONS'):

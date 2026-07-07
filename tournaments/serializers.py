@@ -16,6 +16,7 @@ class RegulationSerializer(serializers.ModelSerializer):
         return data
 
 class TournamentSerializer(serializers.ModelSerializer):
+    winner_team_name = serializers.CharField(source='winner_team.team_name', read_only=True)
     class Meta:
         model = Tournament
         fields = '__all__'
