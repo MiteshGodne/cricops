@@ -189,7 +189,6 @@ export default function TournamentDetail() {
 function GroupCard({ group, tournamentId }) {
   const { data } = useFetch(`${ENDPOINTS.SQUADS}?tournament=${tournamentId}`);
   const allSquads = Array.isArray(data) ? data : data?.results || [];
-  // group doesn't directly filter squads — show group info
   return (
     <div className="border rounded-lg p-4">
       <h3 className="font-semibold text-lg mb-2">{group.name}</h3>
@@ -204,12 +203,13 @@ function MatchCard({ match }) {
     COMPLETED: 'bg-gray-50 border-gray-200',
     ABANDONED: 'bg-red-50 border-red-200',
   };
+  const teamA = match.teams?.[0] || 'TBD', teamB = match.teams?.[1] || 'TBD';
   return (
     <div className={`border rounded-lg p-4 ${statusColors[match.status] || ''}`}>
       <div className="flex justify-between items-center">
         <div>
           <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
-          <p className="font-semibold mt-1">{match.team_a || 'TBD'} vs {match.team_b || 'TBD'}</p>
+          <p className="font-semibold mt-1">{teamA} vs {teamB}</p>
           <p className="text-sm text-gray-500">{match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
         </div>
         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${match.status === 'LIVE' ? 'bg-green-500 text-white animate-pulse' :
