@@ -8,7 +8,7 @@ class RegulationAdmin(admin.ModelAdmin):
     
 @admin.register(Tournament)
 class TournamentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'status', 'start_date', 'end_date', 'application_starts_from', 'application_deadline', 'is_public', 'created_by', 'regulation']
+    list_display = ['name', 'category', 'status', 'start_date', 'end_date', 'application_starts_from', 'application_deadline', 'is_public', 'created_by', 'regulation', 'winner_team']
     list_filter = ['status', 'category']
     search_fields = ['name']
     ordering = ['-created_at']

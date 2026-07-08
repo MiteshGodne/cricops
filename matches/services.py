@@ -118,10 +118,9 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         innings.total_sixes += 1
     if wicket_type != 'NONE':
         innings.total_wickets += 1
-
-    legal_count = 0
-    if is_legal:
-        legal_count = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
+        
+        
+    legal_count = Delivery.objects.filter(innings=innings, is_legal_delivery=True).count()
     innings.overs_completed = float(f"{legal_count // 6}.{legal_count % 6}")
 
     regulation = innings.match.tournament.regulation
