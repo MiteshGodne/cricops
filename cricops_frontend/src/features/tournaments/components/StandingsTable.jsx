@@ -1,7 +1,7 @@
 export default function StandingsTable({ standings }) {
   if (!standings?.length) return <p className="text-gray-500">No standings yet.</p>;
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
+    <div className="overflow-x-auto rounded-xl shadow-lg shadow-blue-100">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
           <tr>
