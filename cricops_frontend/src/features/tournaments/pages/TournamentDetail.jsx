@@ -209,7 +209,7 @@ function MatchCard({ match }) {
   const teamA = match.teams?.[0] || 'TBD', teamB = match.teams?.[1] || 'TBD';
   return (
     <div className={`border-0 border-l-5 border-b-5 rounded-lg p-4 ${statusColors[match.status] || ''}`}>
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center w-[100%]">
         {match.status === 'SCHEDULED' && (
           <div>
             <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>

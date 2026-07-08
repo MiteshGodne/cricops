@@ -81,7 +81,7 @@ def process_delivery(validated_data):
         ))
     PlayerDelivery.objects.bulk_create(player_deliveries)
 
-    update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal, is_boundary=validated_data.get('is_boundary', False))
+    current_innings = update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal, is_boundary=validated_data.get('is_boundary', False))
 
     # auto-rotation logic
     legal_count_after = legal_count_before + (1 if is_legal else 0)
@@ -100,10 +100,11 @@ def process_delivery(validated_data):
         innings.match.pause_reason = 'WICKET'
         innings.match.save(update_fields=['is_paused', 'pause_reason'])
 
-    update_live_state(innings, new_striker, new_non_striker, bowler)
+    update_live_state(current_innings, new_striker, new_non_striker, bowler)
     return delivery
 
 def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is_legal, is_boundary=False):
+    match = innings.match
     innings.total_score += runs + extra_runs
     if extra_type in ['WIDE', 'NO_BALL']:
         innings.total_extras += extra_runs + 1
@@ -140,12 +141,14 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
         'total_sixes', 'overs_completed', 'is_completed', 'end_time'
     ])
 
-    if just_completed and not target_chased and innings.innings_number < match.innings_count:
+    if not just_completed:
+        return innings
+
+    if not target_chased and innings.innings_number < match.innings_count:
         match.is_paused = True
         match.pause_reason = 'INNINGS_END'
         match.save(update_fields=['is_paused', 'pause_reason'])
-        
-    match = innings.match
+
     total_innings_expected = match.innings_count
     next_innings = Innings.objects.filter(match=match, innings_number=innings.innings_number + 1).first()
     if not next_innings and innings.innings_number < total_innings_expected and not target_chased:
@@ -156,13 +159,14 @@ def update_innings_totals(innings, wicket_type, runs, extra_runs, extra_type, is
             fielding_team=innings.batting_team,
             target_runs=innings.total_score + 1,
         )
-        return 
+        return next_innings
     if next_innings and not target_chased:
         if not next_innings.target_runs:
             next_innings.target_runs = innings.total_score + 1
             next_innings.save(update_fields=['target_runs'])
-        return  
+        return next_innings
     finalize_match_result(match)
+    return innings
 
 
 def finalize_match_result(match):
@@ -367,7 +371,8 @@ def get_live_score(match):
         'non_striker_id': str(live_state.current_non_striker_id) if live_state.current_non_striker_id else None,
         'bowler_id': str(live_state.current_bowler_id),
         'overs_remaining': overs_remaining,
-        'out_player_ids': list(PlayerDelivery.objects.filter(delivery__innings=innings, dismissal_info__gt='').values_list('player_id', flat=True).distinct()),
+        'out_player_ids': list(PlayerDelivery.objects.filter(delivery__innings=innings,dismissal_info__gt='',
+            performance_role__in=['STRIKER', 'NON_STRIKER']).values_list('player_id', flat=True).distinct()),
         'result_note': match.result_note or '',
         'is_paused': match.is_paused,
         'pause_reason': match.pause_reason,

@@ -1,7 +1,7 @@
 export default function MatchResultBox({ match, teamA, teamB }) {
     if (match.result_type === 'TIE') {
         return (
-            <div>
+            <div className="p-2">
                 <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
                 <p className="font-semibold mt-1">{teamA} vs {teamB}</p>
                 <p className="text-sm text-gray-500">Played at : {match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
@@ -10,7 +10,7 @@ export default function MatchResultBox({ match, teamA, teamB }) {
         )
     }
     return (
-        <div>
+        <div className="p-2">
             <span className="text-xs font-semibold text-gray-500 uppercase">{match.round_type} · Round {match.round_number}</span>
             <p className="font-semibold mt-1">{teamA} vs {teamB}</p>
             <p className="text-sm text-gray-500">Played at : {match.start_date ? new Date(match.start_date).toLocaleString() : 'Date TBD'}</p>
