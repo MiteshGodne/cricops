@@ -52,7 +52,7 @@ export default function TournamentDetail() {
             <div className="flex gap-3 mt-3 flex-wrap">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor[t.status]}`}>{t.status.replace(/_/g, ' ')}</span>
               <span className="text-sm text-blue-100">Start Date 📅 : {t.start_date} → {'TBD'}</span>
-              {t.application_deadline && (
+              {t.status === "ACCEPTING_APPLICATIONS" && (
                 <span className="text-sm text-blue-100">⏰ Apply by {new Date(t.application_deadline).toLocaleDateString()}</span>
               )}
             </div>

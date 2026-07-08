@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { to: '/matches', label: 'Live Matches' },
   { to: '/venues', label: 'Venues' },
   { to: '/players', label: 'Players' },
-  { to: '/about', label: 'About Us' }
+  // { to: '/about', label: 'About Us' }
 ];
 
 export default function Navbar() {

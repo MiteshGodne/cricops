@@ -34,7 +34,7 @@ export default function TournamentBrowse() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tournaments.map((t) => (
           <Link to={`/tournaments/${t.tournament_id}`} key={t.tournament_id}
-            className="border-l-5 border-b-5 border-1 border-[#183153] rounded-xl p-5 hover:shadow-md transition-all hover:-translate-y-0.5 bg-white group">
+            className="border-l-5 border-b-5 border-blue-300 rounded-xl p-5 hover:shadow-md transition-all hover:-translate-y-0.5 group bg-blue-50">
             <div className="flex justify-between items-start mb-3">
               <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition">{t.name}</h3>
               <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[t.status] || 'bg-gray-100'}`}>
@@ -43,11 +43,11 @@ export default function TournamentBrowse() {
             </div>
             <p className="text-sm text-gray-500 mb-2">{t.category.replace(/_/g, ' ')}</p>
             <p className="text-xs text-gray-400">📅 {t.start_date}</p>
-            {t.application_deadline && (
+            {t.status == 'ACCEPTING_APPLICATION' && (
               <p className="text-xs text-orange-500 mt-1">⏰ Apply by {new Date(t.application_deadline).toLocaleDateString()}</p>
             )}
-            {t.status === 'COMPLETED' && t.winner_team && (
-              <div className="winner-badge">🏆 Champion: {t.winner_team_name}</div>
+            {t.status === 'COMPLETED' && (
+              <div className="winner-badge pt-2">🏆 Champion: {t.winner_team_name}</div>
             )}
           </Link>
         ))}
