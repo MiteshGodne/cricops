@@ -10,6 +10,7 @@ import TossModal from '../components/TossModal';
 import Button from '../../../components/Button';
 import BackButton from '../../../components/BackButton';
 import { Link } from 'react-router-dom';
+import MatchResultBox from '../pages/MatchResultBox';
 
 
 export default function UmpireScoringConsole() {
@@ -122,34 +123,40 @@ export default function UmpireScoringConsole() {
       <LiveScoreWidget matchId={matchId} />
       {innings && (
         <>
-          <div className="flex flex-col sm:flex-row gap-2 mb-3">
-            <select className="border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={striker} onChange={(e) => setStriker(e.target.value)}>
-              <option value="">Striker</option>
-              {squadA.filter(p => p.player_id !== nonStriker && !score?.out_player_ids?.includes(p.player_id)).map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
-            </select>
-            <select className="border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={nonStriker} onChange={(e) => setNonStriker(e.target.value)}>
-              <option value="">Non-striker</option>
-              {squadA.filter(p => p.player_id !== striker && !score?.out_player_ids?.includes(p.player_id)).map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
-            </select>
-            <select className="border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={bowler} disabled={bowlerLocked}
-              onChange={(e) => setBowler(e.target.value)}>
-              <option value="">Bowler</option>
-              {squadB.map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
-            </select>
-          </div>
-          {striker && nonStriker && bowler && (
-            <BallEntryPad
-              inningsId={innings.innings_id}
-              strikerId={striker}
-              nonStrikerId={nonStriker}
-              bowlerId={bowler}
-              fielders={squadB}
-              onDelivered={() => {
-                setKey((k) => k + 1);
-                refetchScore();
-                refetchMatch();
-              }}
-            />
+          {match.status === 'COMPLETED' ? (
+            <MatchResultBox match={match} />
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <select className="border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={striker} onChange={(e) => setStriker(e.target.value)}>
+                  <option value="">Striker</option>
+                  {squadA.filter(p => p.player_id !== nonStriker && !score?.out_player_ids?.includes(p.player_id)).map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
+                </select>
+                <select className="border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={nonStriker} onChange={(e) => setNonStriker(e.target.value)}>
+                  <option value="">Non-striker</option>
+                  {squadA.filter(p => p.player_id !== striker && !score?.out_player_ids?.includes(p.player_id)).map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
+                </select>
+                <select className="border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={bowler} disabled={bowlerLocked}
+                  onChange={(e) => setBowler(e.target.value)}>
+                  <option value="">Bowler</option>
+                  {squadB.map((p) => <option key={p.player_id} value={p.player_id}>{p.full_name}</option>)}
+                </select>
+              </div>
+              {striker && nonStriker && bowler && (
+                <BallEntryPad
+                  inningsId={innings.innings_id}
+                  strikerId={striker}
+                  nonStrikerId={nonStriker}
+                  bowlerId={bowler}
+                  fielders={squadB}
+                  onDelivered={() => {
+                    setKey((k) => k + 1);
+                    refetchScore();
+                    refetchMatch();
+                  }}
+                />
+              )}
+            </>
           )}
         </>
       )}
